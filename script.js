@@ -7,6 +7,8 @@ const speedLabel = document.getElementById("speedLabel");
 const episodeCounter = document.getElementById("episodeCounter");
 const currentScoreEl = document.getElementById("currentScore");
 const bestScoreEl = document.getElementById("bestScore");
+const chartSection = document.querySelector(".chart-section");
+const chartCanvas = document.getElementById("scoreChart");
 
 const ROWS = 5;
 const COLS = 5;
@@ -25,6 +27,7 @@ const gamma = 0.9; // diskontering
 let epsilon = 0.3; // utforskning
 const minEpsilon = 0.05;
 const epsilonDecay = 0.995;
+const BASE_DELAY = 250;
 
 let cells = [];
 let robotPos = { ...startPos };
@@ -49,7 +52,7 @@ let scoreMin = null;
 let scoreMax = null;
 let useDynamicScale = false;
 
-const chart = new Chart(document.getElementById("scoreChart"), {
+const chart = new Chart(chartCanvas, {
   type: "line",
   data: {
     labels: [],
@@ -186,33 +189,23 @@ function stateIndex(row, col) {
 }
 
 function getSpeedDelay() {
-  const level = Number(speedSlider.value);
-  switch (level) {
-    case 1:
-      return 700;
-    case 2:
-      return 450;
-    case 3:
-      return 250;
-    case 4:
-      return 120;
-    case 5:
-      return 50;
-    default:
-      return 250;
-  }
+  const multiplier = Number(speedSlider.value);
+  return BASE_DELAY / multiplier;
 }
 
 function updateSpeedLabel() {
-  const level = Number(speedSlider.value);
-  const labels = {
-    1: "Långsam",
-    2: "Mjuk",
-    3: "Medium",
-    4: "Snabb",
-    5: "Turbo"
-  };
-  speedLabel.textContent = labels[level];
+  const multiplier = Number(speedSlider.value);
+  speedLabel.textContent = multiplier === 1 ? "Bas" : `${multiplier}×`;
+}
+
+function syncChartHeight() {
+  if (!chartSection) return;
+  const gridHeight = gridElement.offsetHeight;
+  chartSection.style.minHeight = `${gridHeight}px`;
+  chartSection.style.height = `${gridHeight}px`;
+  chartCanvas.style.height = `${gridHeight}px`;
+  chartCanvas.height = gridHeight;
+  chart.resize();
 }
 
 function updateRobotVisual() {
@@ -331,7 +324,7 @@ function runEpisode() {
   currentScoreEl.textContent = currentScore.toFixed(1);
   robotPos = { ...startPos };
   updateRobotVisual();
-  scheduleStepLoop(300);
+  scheduleStepLoop(getSpeedDelay());
 }
 
 function finalizeEpisode(score) {
@@ -379,7 +372,7 @@ function startTraining() {
   if (isTraining && isPaused) {
     isPaused = false;
     if (episodeActive) {
-      scheduleStepLoop(100);
+      scheduleStepLoop(getSpeedDelay());
     } else {
       runEpisode();
     }
@@ -426,14 +419,22 @@ function resetTraining() {
   robotPos = { ...startPos };
   initQTable();
   createGrid();
+  syncChartHeight();
 }
 
 startBtn.addEventListener("click", startTraining);
 pauseBtn.addEventListener("click", pauseTraining);
 resetBtn.addEventListener("click", resetTraining);
 
-speedSlider.addEventListener("input", updateSpeedLabel);
+speedSlider.addEventListener("input", () => {
+  updateSpeedLabel();
+  if (isTraining && !isPaused && episodeActive) {
+    scheduleStepLoop(getSpeedDelay());
+  }
+});
 
 createGrid();
 initQTable();
 updateSpeedLabel();
+syncChartHeight();
+window.addEventListener("resize", syncChartHeight);
