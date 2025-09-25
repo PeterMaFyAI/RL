@@ -434,6 +434,7 @@ function finalizeEpisode(score) {
 function startTraining() {
   if (isTraining && isPaused) {
     isPaused = false;
+    pauseBtn.textContent = "Pausa";
     clearPathOverlay();
     if (episodeActive) {
       scheduleStepLoop(getSpeedDelay());
@@ -445,6 +446,7 @@ function startTraining() {
   if (isTraining) return;
   isTraining = true;
   isPaused = false;
+  pauseBtn.textContent = "Pausa";
   if (!episodeActive) {
     runEpisode();
   }
@@ -453,6 +455,7 @@ function startTraining() {
 function pauseTraining() {
   if (!isTraining) return;
   isPaused = true;
+  pauseBtn.textContent = "fortsätt";
   clearTimeout(stepTimeout);
   clearTimeout(episodeTimeout);
   renderBestPath();
@@ -462,6 +465,7 @@ function resetTraining() {
   isTraining = false;
   isPaused = false;
   episodeActive = false;
+  pauseBtn.textContent = "Pausa";
   clearTimeout(stepTimeout);
   clearTimeout(episodeTimeout);
   epsilon = 0.3;
@@ -493,7 +497,14 @@ function resetTraining() {
 }
 
 startBtn.addEventListener("click", startTraining);
-pauseBtn.addEventListener("click", pauseTraining);
+pauseBtn.addEventListener("click", () => {
+  if (!isTraining) return;
+  if (isPaused) {
+    startTraining();
+    return;
+  }
+  pauseTraining();
+});
 resetBtn.addEventListener("click", resetTraining);
 
 speedSlider.addEventListener("input", () => {
@@ -528,5 +539,5 @@ function updateBestScoreDisplay() {
   const hasBestScore = bestScore !== -Infinity;
   const scoreText = hasBestScore ? bestScore.toFixed(1) : "0";
   const episodeText = hasBestScore && bestScoreEpisode !== null ? bestScoreEpisode : "–";
-  bestScoreEl.textContent = `${scoreText} (Ep ${episodeText})`;
+  bestScoreEl.innerHTML = `<span class="best-score-value">${scoreText}</span><span class="best-score-episode">(Ep ${episodeText})</span>`;
 }
