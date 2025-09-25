@@ -41,6 +41,14 @@ let episodeTimeout = null;
 let scores = [];
 let averages = [];
 
+const INITIAL_Y_MIN = -15;
+const INITIAL_Y_MAX = 10;
+const DYNAMIC_SCALE_THRESHOLD = 10;
+
+let scoreMin = null;
+let scoreMax = null;
+let useDynamicScale = false;
+
 const chart = new Chart(document.getElementById("scoreChart"), {
   type: "line",
   data: {
@@ -79,6 +87,8 @@ const chart = new Chart(document.getElementById("scoreChart"), {
         }
       },
       y: {
+        min: INITIAL_Y_MIN,
+        max: INITIAL_Y_MAX,
         ticks: {
           color: "rgba(47, 42, 74, 0.7)"
         },
@@ -96,6 +106,45 @@ const chart = new Chart(document.getElementById("scoreChart"), {
     }
   }
 });
+
+function updateChartScale() {
+  if (!useDynamicScale) {
+    chart.options.scales.y.min = INITIAL_Y_MIN;
+    chart.options.scales.y.max = INITIAL_Y_MAX;
+    return;
+  }
+
+  if (scoreMin === null || scoreMax === null) {
+    chart.options.scales.y.min = INITIAL_Y_MIN;
+    chart.options.scales.y.max = INITIAL_Y_MAX;
+    return;
+  }
+
+  const lowerBound = scoreMin - 0.5;
+  const upperBound = scoreMax + 0.5;
+
+  if (lowerBound >= upperBound) {
+    const center = (lowerBound + upperBound) / 2;
+    const offset = 1;
+    chart.options.scales.y.min = center - offset;
+    chart.options.scales.y.max = center + offset;
+    return;
+  }
+
+  chart.options.scales.y.min = lowerBound;
+  chart.options.scales.y.max = upperBound;
+}
+
+function recalculateScoreExtrema() {
+  if (!scores.length) {
+    scoreMin = null;
+    scoreMax = null;
+    return;
+  }
+
+  scoreMin = scores.reduce((min, value) => Math.min(min, value), scores[0]);
+  scoreMax = scores.reduce((max, value) => Math.max(max, value), scores[0]);
+}
 
 function createGrid() {
   gridElement.innerHTML = "";
@@ -298,6 +347,12 @@ function finalizeEpisode(score) {
   const avg = slice.reduce((acc, val) => acc + val, 0) / slice.length;
   averages.push(Number(avg.toFixed(2)));
 
+  recalculateScoreExtrema();
+  if (!useDynamicScale && scores.length >= DYNAMIC_SCALE_THRESHOLD) {
+    useDynamicScale = true;
+  }
+  updateChartScale();
+
   chart.update();
 
   if (score > bestScore) {
@@ -346,6 +401,10 @@ function resetTraining() {
   chart.data.labels = [];
   chart.data.datasets[0].data = scores;
   chart.data.datasets[1].data = averages;
+  scoreMin = null;
+  scoreMax = null;
+  useDynamicScale = false;
+  updateChartScale();
   chart.update();
   episodeCounter.textContent = "0";
   currentScoreEl.textContent = "0";
