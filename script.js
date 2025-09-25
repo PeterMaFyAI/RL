@@ -6,6 +6,8 @@ const pauseBtn = document.getElementById("pauseBtn");
 const resetBtn = document.getElementById("resetBtn");
 const speedSlider = document.getElementById("speedSlider");
 const speedLabel = document.getElementById("speedLabel");
+const rowSelect = document.getElementById("rowSelect");
+const colSelect = document.getElementById("colSelect");
 const episodeCounter = document.getElementById("episodeCounter");
 const currentScoreEl = document.getElementById("currentScore");
 const bestScoreEl = document.getElementById("bestScore");
@@ -13,17 +15,14 @@ const epsilonValueEl = document.getElementById("epsilonValue");
 const chartSection = document.querySelector(".chart-section");
 const chartCanvas = document.getElementById("scoreChart");
 
-const ROWS = 5;
-const COLS = 5;
+let rows = 5;
+let cols = 5;
 const ACTIONS = ["up", "down", "left", "right"];
 
-const startPos = { row: 0, col: 0 };
-const goalPos = { row: 4, col: 4 };
-const hazardPos = { row: 2, col: 2 };
-const defaultWalls = [
-  { row: 1, col: 3 },
-  { row: 3, col: 1 }
-];
+let startPos = { row: 0, col: 0 };
+let goalPos = { row: 4, col: 4 };
+let hazardPos = { row: 2, col: 2 };
+let defaultWalls = [];
 
 const OBJECT_TYPES = {
   EMPTY: "empty",
@@ -73,6 +72,122 @@ const appleCells = new Set();
 
 function positionKey(row, col) {
   return `${row},${col}`;
+}
+
+function positionsEqual(a, b) {
+  return a.row === b.row && a.col === b.col;
+}
+
+function clampGridSize(value) {
+  const min = 2;
+  const max = 8;
+  if (!Number.isFinite(value)) {
+    return value;
+  }
+  return Math.min(Math.max(value, min), max);
+}
+
+function computeHazardPosition(rowCount, colCount, start, goal) {
+  const candidates = [
+    { row: Math.floor(rowCount / 2), col: Math.floor(colCount / 2) },
+    { row: Math.max(0, rowCount - 2), col: Math.max(0, colCount - 2) },
+    { row: Math.min(rowCount - 1, 1), col: Math.max(0, colCount - 2) },
+    { row: Math.max(0, rowCount - 2), col: Math.min(colCount - 1, 1) }
+  ];
+
+  return (
+    candidates.find(
+      candidate =>
+        candidate.row >= 0 &&
+        candidate.col >= 0 &&
+        candidate.row < rowCount &&
+        candidate.col < colCount &&
+        !positionsEqual(candidate, start) &&
+        !positionsEqual(candidate, goal)
+    ) || { row: Math.min(rowCount - 1, 1), col: Math.min(colCount - 1, 1) }
+  );
+}
+
+function computeDefaultWalls(rowCount, colCount, start, goal, hazard) {
+  const usedPositions = new Set([
+    positionKey(start.row, start.col),
+    positionKey(goal.row, goal.col),
+    positionKey(hazard.row, hazard.col)
+  ]);
+
+  const candidates = [
+    {
+      row: Math.floor(rowCount / 2),
+      col: Math.min(colCount - 1, Math.floor(colCount / 2) + 1)
+    },
+    {
+      row: Math.min(rowCount - 1, Math.floor(rowCount / 2) + 1),
+      col: Math.floor(colCount / 2)
+    },
+    {
+      row: Math.min(rowCount - 1, 1),
+      col: Math.floor(colCount / 2)
+    },
+    {
+      row: Math.floor(rowCount / 2),
+      col: Math.min(colCount - 1, 1)
+    }
+  ];
+
+  const walls = [];
+  for (const candidate of candidates) {
+    if (
+      candidate.row < 0 ||
+      candidate.col < 0 ||
+      candidate.row >= rowCount ||
+      candidate.col >= colCount
+    ) {
+      continue;
+    }
+    const key = positionKey(candidate.row, candidate.col);
+    if (usedPositions.has(key)) {
+      continue;
+    }
+    usedPositions.add(key);
+    walls.push(candidate);
+    if (walls.length === 2) {
+      break;
+    }
+  }
+  return walls;
+}
+
+function updateEnvironmentLayout() {
+  startPos = { row: 0, col: 0 };
+  goalPos = { row: rows - 1, col: cols - 1 };
+  hazardPos = computeHazardPosition(rows, cols, startPos, goalPos);
+  defaultWalls = computeDefaultWalls(rows, cols, startPos, goalPos, hazardPos);
+}
+
+function syncGridSizeSelectors() {
+  if (rowSelect) {
+    rowSelect.value = String(rows);
+  }
+  if (colSelect) {
+    colSelect.value = String(cols);
+  }
+}
+
+function applyGridSizeChange(newRows, newCols) {
+  const clampedRows = clampGridSize(newRows);
+  const clampedCols = clampGridSize(newCols);
+  const targetRows = Number.isFinite(clampedRows) ? clampedRows : rows;
+  const targetCols = Number.isFinite(clampedCols) ? clampedCols : cols;
+  if (targetRows === rows && targetCols === cols) {
+    return;
+  }
+
+  rows = targetRows;
+  cols = targetCols;
+  updateEnvironmentLayout();
+  initializeCellObjects();
+  resetTraining();
+  syncGridSizeSelectors();
 }
 
 const INITIAL_Y_MIN = -15;
@@ -185,9 +300,11 @@ function recalculateScoreExtrema() {
 function createGrid() {
   gridElement.innerHTML = "";
   cells = [];
-  for (let r = 0; r < ROWS; r++) {
+  gridElement.style.setProperty("--grid-cols", cols);
+  gridElement.style.gridTemplateColumns = `repeat(${cols}, var(--cell-size))`;
+  for (let r = 0; r < rows; r++) {
     const rowCells = [];
-    for (let c = 0; c < COLS; c++) {
+    for (let c = 0; c < cols; c++) {
       const cell = document.createElement("div");
       cell.className = "cell";
       cell.dataset.row = r;
@@ -239,8 +356,8 @@ function handleCellClick(event) {
 }
 
 function createEmptyObjectGrid() {
-  return Array.from({ length: ROWS }, () =>
-    Array.from({ length: COLS }, () => OBJECT_TYPES.EMPTY)
+  return Array.from({ length: rows }, () =>
+    Array.from({ length: cols }, () => OBJECT_TYPES.EMPTY)
   );
 }
 
@@ -253,8 +370,8 @@ function initializeCellObjects() {
   defaultWalls.forEach(wall => {
     cellObjects[wall.row][wall.col] = OBJECT_TYPES.WALL;
   });
-  for (let r = 0; r < ROWS; r++) {
-    for (let c = 0; c < COLS; c++) {
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
       if (cellObjects[r][c] === OBJECT_TYPES.APPLE) {
         appleCells.add(positionKey(r, c));
       }
@@ -335,16 +452,16 @@ function renderCell(row, col) {
 }
 
 function updateAllCellVisuals() {
-  for (let r = 0; r < ROWS; r++) {
-    for (let c = 0; c < COLS; c++) {
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
       renderCell(r, c);
     }
   }
 }
 
 function hasAnyTerminalCell() {
-  for (let r = 0; r < ROWS; r++) {
-    for (let c = 0; c < COLS; c++) {
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
       const type = cellObjects[r][c];
       if (type === OBJECT_TYPES.GOAL || type === OBJECT_TYPES.HAZARD) {
         return true;
@@ -355,13 +472,13 @@ function hasAnyTerminalCell() {
 }
 
 function initQTable() {
-  qTable = Array.from({ length: ROWS * COLS }, () =>
+  qTable = Array.from({ length: rows * cols }, () =>
     ACTIONS.map(() => 0)
   );
 }
 
 function stateIndex(row, col) {
-  return row * COLS + col;
+  return row * cols + col;
 }
 
 function getSpeedDelay() {
@@ -458,9 +575,9 @@ function takeStep(action) {
 
   if (
     nextRow < 0 ||
-    nextRow >= ROWS ||
+    nextRow >= rows ||
     nextCol < 0 ||
-    nextCol >= COLS ||
+    nextCol >= cols ||
     isWall(nextRow, nextCol)
   ) {
     nextRow = row;
@@ -479,7 +596,7 @@ function takeStep(action) {
     reward -= 10;
     done = true;
   } else if (targetObject === OBJECT_TYPES.APPLE) {
-    reward += 1;
+    reward += 3;
     consumeApple(nextRow, nextCol);
   }
 
@@ -688,6 +805,28 @@ speedSlider.addEventListener("input", () => {
   }
 });
 
+if (rowSelect) {
+  rowSelect.addEventListener("change", () => {
+    const rawRows = Number(rowSelect.value);
+    const newRows = Number.isFinite(rawRows) ? rawRows : rows;
+    const rawCols = colSelect ? Number(colSelect.value) : cols;
+    const newCols = Number.isFinite(rawCols) ? rawCols : cols;
+    applyGridSizeChange(newRows, newCols);
+  });
+}
+
+if (colSelect) {
+  colSelect.addEventListener("change", () => {
+    const rawRows = rowSelect ? Number(rowSelect.value) : rows;
+    const newRows = Number.isFinite(rawRows) ? rawRows : rows;
+    const rawCols = Number(colSelect.value);
+    const newCols = Number.isFinite(rawCols) ? rawCols : cols;
+    applyGridSizeChange(newRows, newCols);
+  });
+}
+
+updateEnvironmentLayout();
+syncGridSizeSelectors();
 initializeCellObjects();
 createGrid();
 initQTable();
