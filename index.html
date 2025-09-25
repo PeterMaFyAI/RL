@@ -17,12 +17,12 @@
     <section class="controls">
       <div class="button-group">
         <button id="startBtn" class="primary">Starta</button>
+        <div class="speed-control">
+          <label for="speedSlider">Hastighet: <span id="speedLabel">Bas</span></label>
+          <input type="range" id="speedSlider" min="1" max="10" value="1" />
+        </div>
         <button id="pauseBtn" class="secondary">Pausa</button>
         <button id="resetBtn" class="danger">Starta om</button>
-      </div>
-      <div class="speed-control">
-        <label for="speedSlider">Hastighet: <span id="speedLabel">Bas</span></label>
-        <input type="range" id="speedSlider" min="1" max="10" value="1" />
       </div>
     </section>
 
@@ -50,7 +50,7 @@
           </div>
           <div class="stat-card">
             <span class="label">Högsta poäng hittills</span>
-            <span class="value" id="bestScore">0 (episod –)</span>
+            <span class="value" id="bestScore">0 (Ep –)</span>
           </div>
           <div class="stat-card">
             <span class="label">Utforskning ε</span>

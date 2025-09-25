@@ -52,7 +52,13 @@ header p {
 
 .button-group {
   display: flex;
+  align-items: center;
   gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.button-group > * {
+  flex-shrink: 0;
 }
 
 button {
@@ -86,10 +92,14 @@ button.danger {
   color: var(--text);
 }
 
+.speed-control {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
 .speed-control label {
-  display: block;
   font-weight: 600;
-  margin-bottom: 0.3rem;
 }
 
 #speedSlider {

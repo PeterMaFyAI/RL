@@ -528,5 +528,5 @@ function updateBestScoreDisplay() {
   const hasBestScore = bestScore !== -Infinity;
   const scoreText = hasBestScore ? bestScore.toFixed(1) : "0";
   const episodeText = hasBestScore && bestScoreEpisode !== null ? bestScoreEpisode : "–";
-  bestScoreEl.textContent = `${scoreText} (episod ${episodeText})`;
+  bestScoreEl.textContent = `${scoreText} (Ep ${episodeText})`;
 }
