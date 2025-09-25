@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Förstärkningsinlärning – Gridvärld v 1.2</title>
+  <title>Förstärkningsinlärning – Gridvärld v 1.3</title>
   <link rel="stylesheet" href="style.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
   <main class="app-container">
     <header>
-      <h1>Robotens förstärkningsinlärning v 1.2</h1>
+      <h1>Robotens förstärkningsinlärning v 1.3</h1>
       <p>Utforska hur en enkel Q-learning agent hittar den optimala vägen genom rutnätet.</p>
     </header>
 
@@ -34,8 +34,8 @@
         </div>
         <div class="legend">
           <span><span class="legend-icon start">🏠</span>Start</span>
-          <span><span class="legend-icon goal">💎</span>Mål</span>
-          <span><span class="legend-icon hazard">💀</span>Fara</span>
+          <span><span class="legend-icon goal">💎</span>Mål (+10p)</span>
+          <span><span class="legend-icon hazard">💀</span>Fara (-10p)</span>
           <span><span class="legend-icon wall">🚧</span>Hinder</span>
           <span><span class="legend-icon robot">🤖</span>Robot</span>
         </div>
@@ -48,15 +48,13 @@
             <span class="label">Poäng denna episod</span>
             <span class="value" id="currentScore">0</span>
           </div>
-          <div class="stat-card highlight stat-card--double">
-            <div class="stat-block">
-              <span class="label">Högsta poäng hittills</span>
-              <span class="value" id="bestScore">0</span>
-            </div>
-            <div class="stat-block">
-              <span class="label">Utforskning ε</span>
-              <span class="value" id="epsilonValue">0.30</span>
-            </div>
+          <div class="stat-card">
+            <span class="label">Högsta poäng hittills</span>
+            <span class="value" id="bestScore">0 (episod –)</span>
+          </div>
+          <div class="stat-card">
+            <span class="label">Utforskning ε</span>
+            <span class="value" id="epsilonValue">0.30</span>
           </div>
         </div>
       </div>
@@ -69,14 +67,6 @@
       </div>
     </section>
 
-    <section class="version-history">
-      <h2>Versionshistorik</h2>
-      <ul>
-        <li><strong>v 1.2:</strong> Visualisering av bästa funna rutt vid paus, visning av ε-värdet och mindre gränssnittsjusteringar.</li>
-        <li><strong>v 1.1:</strong> Förbättrad layout, korrigerad belöningshantering och tillagd versionslogg.</li>
-        <li><strong>v 1.0:</strong> Första versionen med visualisering av Q-learning i gridvärlden.</li>
-      </ul>
-    </section>
   </main>
 
   <script src="script.js"></script>
