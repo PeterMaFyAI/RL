@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Förstärkningsinlärning – Gridvärld v 2.1</title>
+  <title>Förstärkningsinlärning – Gridvärld v 2.2</title>
   <link rel="stylesheet" href="style.css" />
   <link
     rel="icon"
@@ -15,13 +15,41 @@
 <body>
   <main class="app-container">
     <header>
-      <h1>Robotens förstärkningsinlärning v 2.1</h1>
+      <h1>Robotens förstärkningsinlärning v 2.2</h1>
       <p>Utforska hur en enkel Q-learning agent hittar den optimala vägen genom rutnätet.</p>
     </header>
 
     <section class="controls">
       <div class="button-group">
-        <button id="startBtn" class="primary">Starta</button>
+        <div class="start-controls">
+          <button id="startBtn" class="primary">Starta</button>
+          <div class="grid-size-controls">
+            <div class="grid-size-control">
+              <label for="rowSelect">Rader</label>
+              <select id="rowSelect" name="rowSelect">
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5" selected>5</option>
+                <option value="6">6</option>
+                <option value="7">7</option>
+                <option value="8">8</option>
+              </select>
+            </div>
+            <div class="grid-size-control">
+              <label for="colSelect">Kolumner</label>
+              <select id="colSelect" name="colSelect">
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5" selected>5</option>
+                <option value="6">6</option>
+                <option value="7">7</option>
+                <option value="8">8</option>
+              </select>
+            </div>
+          </div>
+        </div>
         <div class="speed-control">
           <label for="speedSlider">Hastighet: <span id="speedLabel">Bas</span></label>
           <input type="range" id="speedSlider" min="1" max="10" value="1" />
@@ -41,11 +69,11 @@
           <span><span class="legend-icon start">🏠</span>Start</span>
           <span><span class="legend-icon goal">💎</span>Mål (+10p)</span>
           <span><span class="legend-icon hazard">💀</span>Fara (-10p)</span>
-          <span><span class="legend-icon apple">🍎</span>Äpple (+1p)</span>
+          <span><span class="legend-icon apple">🍎</span>Äpple (+3p)</span>
           <span><span class="legend-icon wall">🚧</span>Hinder</span>
           <span><span class="legend-icon robot">🤖</span>Robot</span>
         </div>
-        <p class="grid-note">Bonus (+1p)</p>
+        <p class="grid-note">Bonus (+3p)</p>
         <div class="status-panel">
           <div class="stat-card">
             <span class="label">Aktuell episod</span>
