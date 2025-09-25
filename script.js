@@ -38,6 +38,7 @@ let qTable = [];
 let currentEpisode = 0;
 let currentScore = 0;
 let bestScore = -Infinity;
+let bestScoreEpisode = null;
 let isTraining = false;
 let isPaused = false;
 let episodeActive = false;
@@ -421,7 +422,8 @@ function finalizeEpisode(score) {
 
   if (score > bestScore) {
     bestScore = score;
-    bestScoreEl.textContent = bestScore.toFixed(1);
+    bestScoreEpisode = currentEpisode;
+    updateBestScoreDisplay();
     bestPath = currentEpisodePath.map(position => ({ ...position }));
     if (isPaused) {
       renderBestPath();
@@ -467,6 +469,7 @@ function resetTraining() {
   currentEpisode = 0;
   currentScore = 0;
   bestScore = -Infinity;
+  bestScoreEpisode = null;
   bestPath = null;
   currentEpisodePath = [];
   scores = [];
@@ -481,7 +484,7 @@ function resetTraining() {
   chart.update();
   episodeCounter.textContent = "0";
   currentScoreEl.textContent = "0";
-  bestScoreEl.textContent = "0";
+  updateBestScoreDisplay();
   robotPos = { ...startPos };
   initQTable();
   createGrid();
@@ -505,6 +508,7 @@ initQTable();
 updateSpeedLabel();
 syncChartHeight();
 updateEpsilonDisplay();
+updateBestScoreDisplay();
 window.addEventListener("resize", () => {
   syncChartHeight();
   if (isPaused) {
@@ -517,4 +521,12 @@ window.addEventListener("resize", () => {
 function updateEpsilonDisplay() {
   if (!epsilonValueEl) return;
   epsilonValueEl.textContent = epsilon.toFixed(2);
+}
+
+function updateBestScoreDisplay() {
+  if (!bestScoreEl) return;
+  const hasBestScore = bestScore !== -Infinity;
+  const scoreText = hasBestScore ? bestScore.toFixed(1) : "0";
+  const episodeText = hasBestScore && bestScoreEpisode !== null ? bestScoreEpisode : "–";
+  bestScoreEl.textContent = `${scoreText} (episod ${episodeText})`;
 }
