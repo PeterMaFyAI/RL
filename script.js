@@ -20,9 +20,25 @@ const ACTIONS = ["up", "down", "left", "right"];
 const startPos = { row: 0, col: 0 };
 const goalPos = { row: 4, col: 4 };
 const hazardPos = { row: 2, col: 2 };
-const walls = [
+const defaultWalls = [
   { row: 1, col: 3 },
   { row: 3, col: 1 }
+];
+
+const OBJECT_TYPES = {
+  EMPTY: "empty",
+  START: "start",
+  GOAL: "goal",
+  HAZARD: "hazard",
+  WALL: "wall",
+  APPLE: "apple"
+};
+
+const OBJECT_CYCLE = [
+  OBJECT_TYPES.APPLE,
+  OBJECT_TYPES.WALL,
+  OBJECT_TYPES.HAZARD,
+  OBJECT_TYPES.GOAL
 ];
 
 const alpha = 0.2; // inlärningshastighet
@@ -44,6 +60,8 @@ let isPaused = false;
 let episodeActive = false;
 let stepTimeout = null;
 let episodeTimeout = null;
+
+let cellObjects = [];
 
 let scores = [];
 let averages = [];
@@ -165,27 +183,126 @@ function createGrid() {
     for (let c = 0; c < COLS; c++) {
       const cell = document.createElement("div");
       cell.className = "cell";
-      const span = document.createElement("span");
+      cell.dataset.row = r;
+      cell.dataset.col = c;
       if (r === startPos.row && c === startPos.col) {
-        span.textContent = "🏠";
-      } else if (r === goalPos.row && c === goalPos.col) {
-        span.textContent = "💎";
-      } else if (r === hazardPos.row && c === hazardPos.col) {
-        span.textContent = "💀";
-      } else if (isWall(r, c)) {
-        span.textContent = "🚧";
+        cell.classList.add("start-cell");
+      } else {
+        cell.addEventListener("click", handleCellClick);
       }
+      const span = document.createElement("span");
+      span.className = "object-icon";
       cell.appendChild(span);
       gridElement.appendChild(cell);
       rowCells.push(cell);
     }
     cells.push(rowCells);
   }
+  updateAllCellVisuals();
   updateRobotVisual();
   updateOverlaySize();
   if (!isPaused) {
     clearPathOverlay();
   }
+}
+
+function handleCellClick(event) {
+  const cell = event.currentTarget;
+  const row = Number(cell.dataset.row);
+  const col = Number(cell.dataset.col);
+
+  const currentType = cellObjects[row][col];
+  const cycleIndex = OBJECT_CYCLE.indexOf(currentType);
+  const nextType =
+    cycleIndex === -1
+      ? OBJECT_CYCLE[0]
+      : OBJECT_CYCLE[(cycleIndex + 1) % OBJECT_CYCLE.length];
+
+  setCellObject(row, col, nextType);
+  if (!hasAnyTerminalCell()) {
+    setCellObject(row, col, OBJECT_TYPES.GOAL);
+  }
+  updateRobotVisual();
+  bestPath = null;
+  if (isPaused) {
+    renderBestPath();
+  } else {
+    clearPathOverlay();
+  }
+}
+
+function createEmptyObjectGrid() {
+  return Array.from({ length: ROWS }, () =>
+    Array.from({ length: COLS }, () => OBJECT_TYPES.EMPTY)
+  );
+}
+
+function initializeCellObjects() {
+  cellObjects = createEmptyObjectGrid();
+  cellObjects[startPos.row][startPos.col] = OBJECT_TYPES.START;
+  cellObjects[goalPos.row][goalPos.col] = OBJECT_TYPES.GOAL;
+  cellObjects[hazardPos.row][hazardPos.col] = OBJECT_TYPES.HAZARD;
+  defaultWalls.forEach(wall => {
+    cellObjects[wall.row][wall.col] = OBJECT_TYPES.WALL;
+  });
+}
+
+function setCellObject(row, col, type) {
+  if (row === startPos.row && col === startPos.col) {
+    return;
+  }
+  cellObjects[row][col] = type;
+  renderCell(row, col);
+}
+
+function getCellObject(row, col) {
+  return cellObjects[row]?.[col] ?? OBJECT_TYPES.EMPTY;
+}
+
+function getObjectIcon(type) {
+  switch (type) {
+    case OBJECT_TYPES.START:
+      return "🏠";
+    case OBJECT_TYPES.GOAL:
+      return "💎";
+    case OBJECT_TYPES.HAZARD:
+      return "💀";
+    case OBJECT_TYPES.WALL:
+      return "🚧";
+    case OBJECT_TYPES.APPLE:
+      return "🍎";
+    default:
+      return "";
+  }
+}
+
+function renderCell(row, col) {
+  const cell = cells[row]?.[col];
+  if (!cell) return;
+  const span = cell.querySelector(".object-icon");
+  if (!span) return;
+  const type = cellObjects[row][col];
+  span.textContent = getObjectIcon(type);
+}
+
+function updateAllCellVisuals() {
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      renderCell(r, c);
+    }
+  }
+}
+
+function hasAnyTerminalCell() {
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      const type = cellObjects[r][c];
+      if (type === OBJECT_TYPES.GOAL || type === OBJECT_TYPES.HAZARD) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 function initQTable() {
@@ -267,7 +384,8 @@ function updateRobotVisual() {
   cells.flat().forEach(cell => cell.classList.remove("robot-active"));
   gridElement.querySelectorAll(".robot-icon").forEach(icon => icon.remove());
   const { row, col } = robotPos;
-  const cell = cells[row][col];
+  const cell = cells[row]?.[col];
+  if (!cell) return;
   cell.classList.add("robot-active");
   const robotSpan = document.createElement("span");
   robotSpan.className = "robot-icon";
@@ -276,7 +394,7 @@ function updateRobotVisual() {
 }
 
 function isWall(row, col) {
-  return walls.some(w => w.row === row && w.col === col);
+  return getCellObject(row, col) === OBJECT_TYPES.WALL;
 }
 
 function takeStep(action) {
@@ -303,12 +421,17 @@ function takeStep(action) {
   let reward = -0.1;
   let done = false;
 
-  if (nextRow === goalPos.row && nextCol === goalPos.col) {
+  const targetObject = getCellObject(nextRow, nextCol);
+
+  if (targetObject === OBJECT_TYPES.GOAL) {
     reward += 10;
     done = true;
-  } else if (nextRow === hazardPos.row && nextCol === hazardPos.col) {
+  } else if (targetObject === OBJECT_TYPES.HAZARD) {
     reward -= 10;
     done = true;
+  } else if (targetObject === OBJECT_TYPES.APPLE) {
+    reward += 1;
+    setCellObject(nextRow, nextCol, OBJECT_TYPES.EMPTY);
   }
 
   robotPos = { row: nextRow, col: nextCol };
@@ -455,7 +578,7 @@ function startTraining() {
 function pauseTraining() {
   if (!isTraining) return;
   isPaused = true;
-  pauseBtn.textContent = "fortsätt";
+  pauseBtn.textContent = "Fortsätt";
   clearTimeout(stepTimeout);
   clearTimeout(episodeTimeout);
   renderBestPath();
@@ -514,6 +637,7 @@ speedSlider.addEventListener("input", () => {
   }
 });
 
+initializeCellObjects();
 createGrid();
 initQTable();
 updateSpeedLabel();
