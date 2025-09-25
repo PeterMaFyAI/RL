@@ -280,6 +280,20 @@ button.danger {
   color: var(--text);
 }
 
+#bestScore {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.1;
+  gap: 0.2rem;
+}
+
+.best-score-episode {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: rgba(47, 42, 74, 0.65);
+}
+
 .chart-section {
   background: var(--panel);
   border-radius: 24px;
