@@ -38,7 +38,8 @@ const OBJECT_CYCLE = [
   OBJECT_TYPES.APPLE,
   OBJECT_TYPES.WALL,
   OBJECT_TYPES.HAZARD,
-  OBJECT_TYPES.GOAL
+  OBJECT_TYPES.GOAL,
+  OBJECT_TYPES.EMPTY
 ];
 
 const alpha = 0.2; // inlärningshastighet
@@ -67,6 +68,12 @@ let scores = [];
 let averages = [];
 let currentEpisodePath = [];
 let bestPath = null;
+
+const appleCells = new Set();
+
+function positionKey(row, col) {
+  return `${row},${col}`;
+}
 
 const INITIAL_Y_MIN = -15;
 const INITIAL_Y_MAX = 10;
@@ -239,24 +246,66 @@ function createEmptyObjectGrid() {
 
 function initializeCellObjects() {
   cellObjects = createEmptyObjectGrid();
+  appleCells.clear();
   cellObjects[startPos.row][startPos.col] = OBJECT_TYPES.START;
   cellObjects[goalPos.row][goalPos.col] = OBJECT_TYPES.GOAL;
   cellObjects[hazardPos.row][hazardPos.col] = OBJECT_TYPES.HAZARD;
   defaultWalls.forEach(wall => {
     cellObjects[wall.row][wall.col] = OBJECT_TYPES.WALL;
   });
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      if (cellObjects[r][c] === OBJECT_TYPES.APPLE) {
+        appleCells.add(positionKey(r, c));
+      }
+    }
+  }
 }
 
-function setCellObject(row, col, type) {
+function setCellObject(row, col, type, options = {}) {
   if (row === startPos.row && col === startPos.col) {
     return;
   }
+  const { trackApple = true } = options;
   cellObjects[row][col] = type;
+  if (trackApple) {
+    const key = positionKey(row, col);
+    if (type === OBJECT_TYPES.APPLE) {
+      appleCells.add(key);
+    } else {
+      appleCells.delete(key);
+    }
+  }
   renderCell(row, col);
 }
 
 function getCellObject(row, col) {
   return cellObjects[row]?.[col] ?? OBJECT_TYPES.EMPTY;
+}
+
+function restoreApplesForNewEpisode() {
+  appleCells.forEach(key => {
+    const [rowStr, colStr] = key.split(",");
+    const row = Number(rowStr);
+    const col = Number(colStr);
+    if (row === startPos.row && col === startPos.col) {
+      return;
+    }
+    if (!Number.isInteger(row) || !Number.isInteger(col)) {
+      return;
+    }
+    if (!cellObjects[row] || typeof cellObjects[row][col] === "undefined") {
+      return;
+    }
+    if (cellObjects[row][col] !== OBJECT_TYPES.APPLE) {
+      cellObjects[row][col] = OBJECT_TYPES.APPLE;
+      renderCell(row, col);
+    }
+  });
+}
+
+function consumeApple(row, col) {
+  setCellObject(row, col, OBJECT_TYPES.EMPTY, { trackApple: false });
 }
 
 function getObjectIcon(type) {
@@ -431,7 +480,7 @@ function takeStep(action) {
     done = true;
   } else if (targetObject === OBJECT_TYPES.APPLE) {
     reward += 1;
-    setCellObject(nextRow, nextCol, OBJECT_TYPES.EMPTY);
+    consumeApple(nextRow, nextCol);
   }
 
   robotPos = { row: nextRow, col: nextCol };
@@ -496,6 +545,7 @@ function scheduleStepLoop(delay = getSpeedDelay()) {
 
 function runEpisode() {
   if (!isTraining || isPaused) return;
+  restoreApplesForNewEpisode();
   episodeActive = true;
   currentEpisode += 1;
   episodeCounter.textContent = currentEpisode;
@@ -614,6 +664,7 @@ function resetTraining() {
   updateBestScoreDisplay();
   robotPos = { ...startPos };
   initQTable();
+  restoreApplesForNewEpisode();
   createGrid();
   syncChartHeight();
   clearPathOverlay();
