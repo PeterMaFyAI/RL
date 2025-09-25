@@ -43,7 +43,7 @@ let averages = [];
 
 const INITIAL_Y_MIN = -15;
 const INITIAL_Y_MAX = 10;
-const DYNAMIC_SCALE_THRESHOLD = 10;
+const SCALE_PADDING = 0.5;
 
 let scoreMin = null;
 let scoreMax = null;
@@ -108,31 +108,33 @@ const chart = new Chart(document.getElementById("scoreChart"), {
 });
 
 function updateChartScale() {
+  const yScale = chart.options.scales.y;
+
   if (!useDynamicScale) {
-    chart.options.scales.y.min = INITIAL_Y_MIN;
-    chart.options.scales.y.max = INITIAL_Y_MAX;
+    yScale.min = INITIAL_Y_MIN;
+    yScale.max = INITIAL_Y_MAX;
     return;
   }
 
   if (scoreMin === null || scoreMax === null) {
-    chart.options.scales.y.min = INITIAL_Y_MIN;
-    chart.options.scales.y.max = INITIAL_Y_MAX;
+    yScale.min = INITIAL_Y_MIN;
+    yScale.max = INITIAL_Y_MAX;
     return;
   }
 
-  const lowerBound = scoreMin - 0.5;
-  const upperBound = scoreMax + 0.5;
+  let lowerBound = Math.min(scoreMin - SCALE_PADDING, INITIAL_Y_MIN);
+  let upperBound = Math.max(scoreMax + SCALE_PADDING, INITIAL_Y_MAX);
 
   if (lowerBound >= upperBound) {
     const center = (lowerBound + upperBound) / 2;
     const offset = 1;
-    chart.options.scales.y.min = center - offset;
-    chart.options.scales.y.max = center + offset;
+    yScale.min = center - offset;
+    yScale.max = center + offset;
     return;
   }
 
-  chart.options.scales.y.min = lowerBound;
-  chart.options.scales.y.max = upperBound;
+  yScale.min = lowerBound;
+  yScale.max = upperBound;
 }
 
 function recalculateScoreExtrema() {
@@ -348,8 +350,20 @@ function finalizeEpisode(score) {
   averages.push(Number(avg.toFixed(2)));
 
   recalculateScoreExtrema();
-  if (!useDynamicScale && scores.length >= DYNAMIC_SCALE_THRESHOLD) {
+  const hasExtrema = scoreMin !== null && scoreMax !== null;
+  const isOutsideInitialRange =
+    hasExtrema &&
+    (scoreMin < INITIAL_Y_MIN || scoreMax > INITIAL_Y_MAX);
+
+  if (isOutsideInitialRange) {
     useDynamicScale = true;
+  } else if (
+    useDynamicScale &&
+    hasExtrema &&
+    scoreMin >= INITIAL_Y_MIN &&
+    scoreMax <= INITIAL_Y_MAX
+  ) {
+    useDynamicScale = false;
   }
   updateChartScale();
 
