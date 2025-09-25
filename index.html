@@ -1,1 +1,67 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Förstärkningsinlärning – Gridvärld</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <main class="app-container">
+    <header>
+      <h1>Robotens förstärkningsinlärning</h1>
+      <p>Utforska hur en enkel Q-learning agent hittar den optimala vägen genom rutnätet.</p>
+    </header>
 
+    <section class="controls">
+      <div class="button-group">
+        <button id="startBtn" class="primary">Starta</button>
+        <button id="pauseBtn" class="secondary">Pausa</button>
+        <button id="resetBtn" class="danger">Starta om</button>
+      </div>
+      <div class="speed-control">
+        <label for="speedSlider">Hastighet: <span id="speedLabel">Medium</span></label>
+        <input type="range" id="speedSlider" min="1" max="5" value="3" />
+      </div>
+    </section>
+
+    <section class="dashboard">
+      <div class="grid-panel">
+        <h2>Spelplan</h2>
+        <div id="grid" class="grid"></div>
+        <div class="legend">
+          <span><span class="legend-icon start">🏠</span>Start</span>
+          <span><span class="legend-icon goal">💎</span>Mål</span>
+          <span><span class="legend-icon hazard">💀</span>Fara</span>
+          <span><span class="legend-icon wall">🚧</span>Hinder</span>
+          <span><span class="legend-icon robot">🤖</span>Robot</span>
+        </div>
+      </div>
+
+      <div class="stats-panel">
+        <h2>Status</h2>
+        <div class="stat-card">
+          <span class="label">Aktuell episod</span>
+          <span class="value" id="episodeCounter">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="label">Poäng denna episod</span>
+          <span class="value" id="currentScore">0</span>
+        </div>
+        <div class="stat-card highlight">
+          <span class="label">Högsta poäng hittills</span>
+          <span class="value" id="bestScore">0</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="chart-section">
+      <h2>Poäng per runda</h2>
+      <canvas id="scoreChart" height="160"></canvas>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>

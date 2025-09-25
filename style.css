@@ -1,0 +1,241 @@
+:root {
+  --bg: #f5f0ff;
+  --panel: #ffffffcc;
+  --accent: #7d8ae6;
+  --accent-2: #ffb7b2;
+  --accent-3: #b5e2fa;
+  --text: #2f2a4a;
+  --grid-line: #d4c5f0;
+  --highlight: #ffd166;
+  font-size: 16px;
+}
+
+body {
+  margin: 0;
+  font-family: "Poppins", "Segoe UI", sans-serif;
+  background: linear-gradient(135deg, #f9f7ff 0%, #e0f7fa 100%);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+.app-container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 3rem;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 2.5rem;
+  color: var(--accent);
+}
+
+header p {
+  margin-top: 0.5rem;
+  color: rgba(47, 42, 74, 0.8);
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.button-group {
+  display: flex;
+  gap: 0.75rem;
+}
+
+button {
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(125, 138, 230, 0.2);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(125, 138, 230, 0.25);
+}
+
+button.primary {
+  background: var(--accent);
+  color: white;
+}
+
+button.secondary {
+  background: var(--accent-3);
+  color: var(--text);
+}
+
+button.danger {
+  background: var(--accent-2);
+  color: var(--text);
+}
+
+.speed-control label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.3rem;
+}
+
+#speedSlider {
+  width: 220px;
+  accent-color: var(--accent);
+}
+
+.dashboard {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.grid-panel,
+.stats-panel {
+  background: var(--panel);
+  border-radius: 24px;
+  padding: 1.5rem;
+  box-shadow: 0 10px 30px rgba(45, 70, 100, 0.1);
+  backdrop-filter: blur(8px);
+}
+
+.grid-panel h2,
+.stats-panel h2,
+.chart-section h2 {
+  margin-top: 0;
+  color: var(--accent);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  grid-template-rows: repeat(5, 1fr);
+  gap: 6px;
+  margin-top: 1rem;
+}
+
+.cell {
+  position: relative;
+  width: 70px;
+  height: 70px;
+  background: white;
+  border-radius: 18px;
+  border: 2px solid var(--grid-line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  box-shadow: inset 0 2px 4px rgba(125, 138, 230, 0.12);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.cell.robot-active {
+  box-shadow: 0 0 18px rgba(255, 209, 102, 0.8);
+  transform: scale(1.05);
+}
+
+.cell span {
+  pointer-events: none;
+}
+
+.legend {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.2rem;
+  flex-wrap: wrap;
+  color: rgba(47, 42, 74, 0.8);
+}
+
+.legend-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 10px;
+  margin-right: 0.4rem;
+  font-size: 1.2rem;
+}
+
+.legend-icon.start { background: #e6d0ff; }
+.legend-icon.goal { background: #d0ffe3; }
+.legend-icon.hazard { background: #ffe0e0; }
+.legend-icon.wall { background: #fef3c7; }
+.legend-icon.robot { background: #dbeafe; }
+
+.stats-panel {
+  display: grid;
+  gap: 1rem;
+}
+
+.stat-card {
+  background: rgba(255, 255, 255, 0.8);
+  padding: 1rem 1.2rem;
+  border-radius: 18px;
+  border: 1px solid rgba(125, 138, 230, 0.18);
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  box-shadow: inset 0 2px 6px rgba(125, 138, 230, 0.08);
+}
+
+.stat-card.highlight {
+  background: #fff4d6;
+}
+
+.stat-card .label {
+  font-size: 0.95rem;
+  color: rgba(47, 42, 74, 0.7);
+}
+
+.stat-card .value {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.chart-section {
+  background: var(--panel);
+  border-radius: 24px;
+  padding: 1.5rem;
+  box-shadow: 0 10px 30px rgba(45, 70, 100, 0.1);
+}
+
+@media (max-width: 960px) {
+  .dashboard {
+    grid-template-columns: 1fr;
+  }
+
+  .grid {
+    margin: 0 auto;
+  }
+
+  .cell {
+    width: 60px;
+    height: 60px;
+  }
+}
+
+@media (max-width: 600px) {
+  .controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  #speedSlider {
+    width: 100%;
+  }
+}
