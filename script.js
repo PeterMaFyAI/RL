@@ -1,4 +1,6 @@
 const gridElement = document.getElementById("grid");
+const gridWrapper = document.getElementById("gridWrapper");
+const pathOverlay = document.getElementById("pathOverlay");
 const startBtn = document.getElementById("startBtn");
 const pauseBtn = document.getElementById("pauseBtn");
 const resetBtn = document.getElementById("resetBtn");
@@ -7,6 +9,7 @@ const speedLabel = document.getElementById("speedLabel");
 const episodeCounter = document.getElementById("episodeCounter");
 const currentScoreEl = document.getElementById("currentScore");
 const bestScoreEl = document.getElementById("bestScore");
+const epsilonValueEl = document.getElementById("epsilonValue");
 const chartSection = document.querySelector(".chart-section");
 const chartCanvas = document.getElementById("scoreChart");
 
@@ -43,6 +46,8 @@ let episodeTimeout = null;
 
 let scores = [];
 let averages = [];
+let currentEpisodePath = [];
+let bestPath = null;
 
 const INITIAL_Y_MIN = -15;
 const INITIAL_Y_MAX = 10;
@@ -176,6 +181,10 @@ function createGrid() {
     cells.push(rowCells);
   }
   updateRobotVisual();
+  updateOverlaySize();
+  if (!isPaused) {
+    clearPathOverlay();
+  }
 }
 
 function initQTable() {
@@ -206,6 +215,51 @@ function syncChartHeight() {
   chartCanvas.style.height = `${gridHeight}px`;
   chartCanvas.height = gridHeight;
   chart.resize();
+}
+
+function updateOverlaySize() {
+  if (!pathOverlay || !gridElement) return;
+  const width = gridElement.offsetWidth;
+  const height = gridElement.offsetHeight;
+  pathOverlay.setAttribute("viewBox", `0 0 ${width} ${height}`);
+  pathOverlay.setAttribute("width", width);
+  pathOverlay.setAttribute("height", height);
+}
+
+function clearPathOverlay() {
+  if (!pathOverlay) return;
+  pathOverlay.innerHTML = "";
+  pathOverlay.classList.remove("visible");
+}
+
+function renderBestPath() {
+  if (!pathOverlay || !gridWrapper) return;
+  if (!bestPath || bestPath.length < 2) {
+    clearPathOverlay();
+    return;
+  }
+
+  updateOverlaySize();
+  const wrapperRect = gridWrapper.getBoundingClientRect();
+
+  const points = bestPath
+    .map(position => {
+      const cell = cells[position.row]?.[position.col];
+      if (!cell) return null;
+      const rect = cell.getBoundingClientRect();
+      const x = rect.left - wrapperRect.left + rect.width / 2;
+      const y = rect.top - wrapperRect.top + rect.height / 2;
+      return `${x},${y}`;
+    })
+    .filter(Boolean);
+
+  if (points.length < 2) {
+    clearPathOverlay();
+    return;
+  }
+
+  pathOverlay.innerHTML = `<polyline points="${points.join(" ")}"></polyline>`;
+  pathOverlay.classList.add("visible");
 }
 
 function updateRobotVisual() {
@@ -258,6 +312,7 @@ function takeStep(action) {
 
   robotPos = { row: nextRow, col: nextCol };
   updateRobotVisual();
+  currentEpisodePath.push({ ...robotPos });
 
   return { reward, done };
 }
@@ -323,12 +378,14 @@ function runEpisode() {
   currentScore = 0;
   currentScoreEl.textContent = currentScore.toFixed(1);
   robotPos = { ...startPos };
+  currentEpisodePath = [{ ...startPos }];
   updateRobotVisual();
   scheduleStepLoop(getSpeedDelay());
 }
 
 function finalizeEpisode(score) {
   epsilon = Math.max(minEpsilon, epsilon * epsilonDecay);
+  updateEpsilonDisplay();
   scores.push(Number(score.toFixed(2)));
   if (scores.length > 200) {
     scores.shift();
@@ -365,12 +422,17 @@ function finalizeEpisode(score) {
   if (score > bestScore) {
     bestScore = score;
     bestScoreEl.textContent = bestScore.toFixed(1);
+    bestPath = currentEpisodePath.map(position => ({ ...position }));
+    if (isPaused) {
+      renderBestPath();
+    }
   }
 }
 
 function startTraining() {
   if (isTraining && isPaused) {
     isPaused = false;
+    clearPathOverlay();
     if (episodeActive) {
       scheduleStepLoop(getSpeedDelay());
     } else {
@@ -391,6 +453,7 @@ function pauseTraining() {
   isPaused = true;
   clearTimeout(stepTimeout);
   clearTimeout(episodeTimeout);
+  renderBestPath();
 }
 
 function resetTraining() {
@@ -400,9 +463,12 @@ function resetTraining() {
   clearTimeout(stepTimeout);
   clearTimeout(episodeTimeout);
   epsilon = 0.3;
+  updateEpsilonDisplay();
   currentEpisode = 0;
   currentScore = 0;
   bestScore = -Infinity;
+  bestPath = null;
+  currentEpisodePath = [];
   scores = [];
   averages = [];
   chart.data.labels = [];
@@ -420,6 +486,7 @@ function resetTraining() {
   initQTable();
   createGrid();
   syncChartHeight();
+  clearPathOverlay();
 }
 
 startBtn.addEventListener("click", startTraining);
@@ -437,4 +504,17 @@ createGrid();
 initQTable();
 updateSpeedLabel();
 syncChartHeight();
-window.addEventListener("resize", syncChartHeight);
+updateEpsilonDisplay();
+window.addEventListener("resize", () => {
+  syncChartHeight();
+  if (isPaused) {
+    renderBestPath();
+  } else {
+    updateOverlaySize();
+  }
+});
+
+function updateEpsilonDisplay() {
+  if (!epsilonValueEl) return;
+  epsilonValueEl.textContent = epsilon.toFixed(2);
+}
