@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Förstärkningsinlärning – Gridvärld</title>
+  <title>Förstärkningsinlärning – Gridvärld v 1.1</title>
   <link rel="stylesheet" href="style.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
   <main class="app-container">
     <header>
-      <h1>Robotens förstärkningsinlärning</h1>
+      <h1>Robotens förstärkningsinlärning v 1.1</h1>
       <p>Utforska hur en enkel Q-learning agent hittar den optimala vägen genom rutnätet.</p>
     </header>
 
@@ -28,7 +28,6 @@
 
     <section class="dashboard">
       <div class="grid-panel">
-        <h2>Spelplan</h2>
         <div id="grid" class="grid"></div>
         <div class="legend">
           <span><span class="legend-icon start">🏠</span>Start</span>
@@ -38,7 +37,6 @@
           <span><span class="legend-icon robot">🤖</span>Robot</span>
         </div>
         <div class="status-panel">
-          <h2>Status</h2>
           <div class="stat-card">
             <span class="label">Aktuell episod</span>
             <span class="value" id="episodeCounter">0</span>
@@ -60,6 +58,14 @@
           <canvas id="scoreChart"></canvas>
         </section>
       </div>
+    </section>
+
+    <section class="version-history">
+      <h2>Versionshistorik</h2>
+      <ul>
+        <li><strong>v 1.1:</strong> Förbättrad layout, korrigerad belöningshantering och tillagd versionslogg.</li>
+        <li><strong>v 1.0:</strong> Första versionen med visualisering av Q-learning i gridvärlden.</li>
+      </ul>
     </section>
   </main>
 
