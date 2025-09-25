@@ -249,10 +249,10 @@ function takeStep(action) {
   let done = false;
 
   if (nextRow === goalPos.row && nextCol === goalPos.col) {
-    reward = 10;
+    reward += 10;
     done = true;
   } else if (nextRow === hazardPos.row && nextCol === hazardPos.col) {
-    reward = -10;
+    reward -= 10;
     done = true;
   }
 
