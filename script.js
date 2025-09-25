@@ -173,8 +173,6 @@ function updateRobotVisual() {
   const robotSpan = document.createElement("span");
   robotSpan.className = "robot-icon";
   robotSpan.textContent = "🤖";
-  robotSpan.style.position = "absolute";
-  robotSpan.style.fontSize = "1.6rem";
   cell.appendChild(robotSpan);
 }
 

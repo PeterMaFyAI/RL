@@ -39,26 +39,28 @@
         </div>
       </div>
 
-      <div class="stats-panel">
-        <h2>Status</h2>
-        <div class="stat-card">
-          <span class="label">Aktuell episod</span>
-          <span class="value" id="episodeCounter">0</span>
+      <div class="side-panel">
+        <div class="stats-panel">
+          <h2>Status</h2>
+          <div class="stat-card">
+            <span class="label">Aktuell episod</span>
+            <span class="value" id="episodeCounter">0</span>
+          </div>
+          <div class="stat-card">
+            <span class="label">Poäng denna episod</span>
+            <span class="value" id="currentScore">0</span>
+          </div>
+          <div class="stat-card highlight">
+            <span class="label">Högsta poäng hittills</span>
+            <span class="value" id="bestScore">0</span>
+          </div>
         </div>
-        <div class="stat-card">
-          <span class="label">Poäng denna episod</span>
-          <span class="value" id="currentScore">0</span>
-        </div>
-        <div class="stat-card highlight">
-          <span class="label">Högsta poäng hittills</span>
-          <span class="value" id="bestScore">0</span>
-        </div>
-      </div>
-    </section>
 
-    <section class="chart-section">
-      <h2>Poäng per runda</h2>
-      <canvas id="scoreChart" height="160"></canvas>
+        <section class="chart-section">
+          <h2>Poäng per runda</h2>
+          <canvas id="scoreChart" height="160"></canvas>
+        </section>
+      </div>
     </section>
   </main>
 
