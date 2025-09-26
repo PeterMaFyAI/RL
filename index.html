@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Förstärkningsinlärning – Gridvärld v 2.3</title>
+  <title>Förstärkningsinlärning – Gridvärld v 2.4</title>
   <link rel="stylesheet" href="style.css" />
   <link
     rel="icon"
@@ -15,7 +15,7 @@
 <body>
   <main class="app-container">
     <header>
-      <h1>Robotens förstärkningsinlärning v 2.3</h1>
+      <h1>Robotens förstärkningsinlärning v 2.4</h1>
       <p>Utforska hur en enkel Q-learning agent hittar den optimala vägen genom rutnätet.</p>
     </header>
 
@@ -77,17 +77,20 @@
           <svg id="pathOverlay" class="path-overlay" preserveAspectRatio="none"></svg>
         </div>
         <div class="legend">
-          <span><span class="legend-icon start">🏠</span>Start</span>
-          <span><span class="legend-icon goal">💎</span>Mål (+10p)</span>
-          <span><span class="legend-icon hazard">💀</span>Fara (-10p)</span>
-          <span
-            ><span class="legend-icon apple">🍎</span>Äpple
-            (<span id="appleLegendValue">+3p</span>)</span
-          >
-          <span><span class="legend-icon wall">🚧</span>Hinder</span>
-          <span><span class="legend-icon robot">🤖</span>Robot</span>
+          <div class="legend-row">
+            <span><span class="legend-icon start">🏠</span>Start</span>
+            <span><span class="legend-icon robot">🤖</span>Robot</span>
+            <span><span class="legend-icon goal">💎</span>Mål (+10p)</span>
+          </div>
+          <div class="legend-row">
+            <span><span class="legend-icon hazard">💀</span>Fara (-10p)</span>
+            <span><span class="legend-icon wall">🚧</span>Hinder</span>
+            <span
+              ><span class="legend-icon apple">🍎</span>Äpple
+              (<span id="appleLegendValue">+3p</span>)</span
+            >
+          </div>
         </div>
-        <p class="grid-note">Bonus (<span id="appleNoteValue">+3p</span>)</p>
         <div class="status-panel">
           <div class="stat-card">
             <span class="label">Aktuell episod</span>

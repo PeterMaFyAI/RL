@@ -10,7 +10,6 @@ const rowSelect = document.getElementById("rowSelect");
 const colSelect = document.getElementById("colSelect");
 const appleRewardInput = document.getElementById("appleRewardInput");
 const appleLegendValue = document.getElementById("appleLegendValue");
-const appleNoteValue = document.getElementById("appleNoteValue");
 const episodeCounter = document.getElementById("episodeCounter");
 const currentScoreEl = document.getElementById("currentScore");
 const bestScoreEl = document.getElementById("bestScore");
@@ -95,9 +94,15 @@ function updateAppleRewardDisplay() {
   if (appleLegendValue) {
     appleLegendValue.textContent = formatted;
   }
-  if (appleNoteValue) {
-    appleNoteValue.textContent = formatted;
-  }
+}
+
+const DEFAULT_WALL_POSITIONS = [
+  { row: 1, col: 2 },
+  { row: 3, col: 1 }
+];
+
+function isValidPosition(row, col, rowCount, colCount) {
+  return row >= 0 && col >= 0 && row < rowCount && col < colCount;
 }
 
 function setAppleReward(value, options = {}) {
@@ -194,7 +199,11 @@ function computeDefaultWalls(rowCount, colCount, start, goal, hazard) {
     positionKey(hazard.row, hazard.col)
   ]);
 
-  const candidates = [
+  const preferredWalls = DEFAULT_WALL_POSITIONS.filter(position =>
+    isValidPosition(position.row, position.col, rowCount, colCount)
+  );
+
+  const fallbackCandidates = [
     {
       row: Math.floor(rowCount / 2),
       col: Math.min(colCount - 1, Math.floor(colCount / 2) + 1)
@@ -214,25 +223,34 @@ function computeDefaultWalls(rowCount, colCount, start, goal, hazard) {
   ];
 
   const walls = [];
-  for (const candidate of candidates) {
-    if (
-      candidate.row < 0 ||
-      candidate.col < 0 ||
-      candidate.row >= rowCount ||
-      candidate.col >= colCount
-    ) {
-      continue;
+
+  function tryAddWall(position) {
+    if (walls.length >= 2) {
+      return;
     }
-    const key = positionKey(candidate.row, candidate.col);
+    if (!position) {
+      return;
+    }
+    if (!isValidPosition(position.row, position.col, rowCount, colCount)) {
+      return;
+    }
+    const key = positionKey(position.row, position.col);
     if (usedPositions.has(key)) {
-      continue;
+      return;
     }
     usedPositions.add(key);
-    walls.push(candidate);
-    if (walls.length === 2) {
+    walls.push(position);
+  }
+
+  preferredWalls.forEach(tryAddWall);
+
+  for (const candidate of fallbackCandidates) {
+    if (walls.length >= 2) {
       break;
     }
+    tryAddWall(candidate);
   }
+
   return walls;
 }
 
