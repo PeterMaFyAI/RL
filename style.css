@@ -43,28 +43,27 @@ header p {
 
 .controls {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
   gap: 1rem;
   margin-bottom: 2rem;
 }
 
-.button-group {
+.primary-controls {
   display: flex;
   align-items: center;
   gap: 0.75rem;
   flex-wrap: wrap;
 }
 
-.button-group > * {
+.primary-controls > * {
   flex-shrink: 0;
 }
 
-.start-controls {
+.configuration-controls {
   display: flex;
-  flex-direction: column;
   gap: 0.75rem;
+  flex-wrap: wrap;
+  align-items: stretch;
 }
 
 .grid-size-controls {
@@ -72,13 +71,14 @@ header p {
   border-radius: 18px;
   padding: 0.75rem 1rem;
   box-shadow: 0 6px 16px rgba(255, 195, 113, 0.35);
-  display: grid;
-  gap: 0.5rem;
-  min-width: 180px;
+  display: flex;
+  gap: 1rem;
+  align-items: flex-end;
 }
 
 .grid-size-control {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 0.25rem;
 }
 
@@ -155,6 +155,39 @@ button.danger {
 #speedSlider {
   width: 220px;
   accent-color: var(--accent);
+}
+
+.apple-config {
+  background: rgba(255, 183, 178, 0.35);
+  border-radius: 18px;
+  padding: 0.75rem 1rem;
+  box-shadow: 0 6px 16px rgba(255, 183, 178, 0.3);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 160px;
+}
+
+.apple-config label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: rgba(120, 50, 50, 0.85);
+}
+
+.apple-config input {
+  border: none;
+  border-radius: 12px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.85);
+  color: rgba(120, 50, 50, 0.9);
+  box-shadow: inset 0 2px 4px rgba(255, 120, 120, 0.25);
+}
+
+.apple-config input:focus {
+  outline: 2px solid rgba(220, 80, 80, 0.55);
+  outline-offset: 2px;
 }
 
 .dashboard {

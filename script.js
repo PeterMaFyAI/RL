@@ -8,6 +8,9 @@ const speedSlider = document.getElementById("speedSlider");
 const speedLabel = document.getElementById("speedLabel");
 const rowSelect = document.getElementById("rowSelect");
 const colSelect = document.getElementById("colSelect");
+const appleRewardInput = document.getElementById("appleRewardInput");
+const appleLegendValue = document.getElementById("appleLegendValue");
+const appleNoteValue = document.getElementById("appleNoteValue");
 const episodeCounter = document.getElementById("episodeCounter");
 const currentScoreEl = document.getElementById("currentScore");
 const bestScoreEl = document.getElementById("bestScore");
@@ -17,6 +20,7 @@ const chartCanvas = document.getElementById("scoreChart");
 
 let rows = 5;
 let cols = 5;
+let appleReward = 3;
 const ACTIONS = ["up", "down", "left", "right"];
 
 let startPos = { row: 0, col: 0 };
@@ -69,6 +73,81 @@ let currentEpisodePath = [];
 let bestPath = null;
 
 const appleCells = new Set();
+
+function normalizeAppleReward(value) {
+  if (!Number.isFinite(value)) {
+    return appleReward;
+  }
+  const clamped = Math.max(0, value);
+  return Number.isInteger(clamped) ? clamped : Number(clamped.toFixed(1));
+}
+
+function formatPoints(value) {
+  const normalized = Number.isInteger(value)
+    ? value
+    : Number(value.toFixed(1));
+  const sign = normalized >= 0 ? "+" : "";
+  return `${sign}${normalized}p`;
+}
+
+function updateAppleRewardDisplay() {
+  const formatted = formatPoints(appleReward);
+  if (appleLegendValue) {
+    appleLegendValue.textContent = formatted;
+  }
+  if (appleNoteValue) {
+    appleNoteValue.textContent = formatted;
+  }
+}
+
+function setAppleReward(value, options = {}) {
+  const { updateInput = true } = options;
+  const normalized = normalizeAppleReward(value);
+  appleReward = normalized;
+  if (updateInput && appleRewardInput) {
+    appleRewardInput.value = normalized;
+  }
+  updateAppleRewardDisplay();
+}
+
+function parseAppleReward(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) {
+    return null;
+  }
+  return numeric;
+}
+
+function setupAppleRewardInput() {
+  if (!appleRewardInput) {
+    updateAppleRewardDisplay();
+    return;
+  }
+
+  const initialValue = parseAppleReward(appleRewardInput.value);
+  if (initialValue !== null) {
+    setAppleReward(initialValue);
+  } else {
+    setAppleReward(appleReward);
+  }
+
+  appleRewardInput.addEventListener("input", () => {
+    const parsed = parseAppleReward(appleRewardInput.value);
+    if (parsed === null) {
+      return;
+    }
+    setAppleReward(parsed, { updateInput: false });
+  });
+
+  appleRewardInput.addEventListener("blur", () => {
+    const parsed = parseAppleReward(appleRewardInput.value);
+    if (parsed === null) {
+      appleRewardInput.value = appleReward;
+      return;
+    }
+    setAppleReward(parsed);
+  });
+}
 
 function positionKey(row, col) {
   return `${row},${col}`;
@@ -596,7 +675,7 @@ function takeStep(action) {
     reward -= 10;
     done = true;
   } else if (targetObject === OBJECT_TYPES.APPLE) {
-    reward += 3;
+    reward += appleReward;
     consumeApple(nextRow, nextCol);
   }
 
@@ -804,6 +883,8 @@ speedSlider.addEventListener("input", () => {
     scheduleStepLoop(getSpeedDelay());
   }
 });
+
+setupAppleRewardInput();
 
 if (rowSelect) {
   rowSelect.addEventListener("change", () => {
