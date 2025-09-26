@@ -19,7 +19,7 @@ const chartCanvas = document.getElementById("scoreChart");
 
 let rows = 5;
 let cols = 5;
-let appleReward = 3;
+let appleReward = 10;
 const ACTIONS = ["up", "down", "left", "right"];
 
 let startPos = { row: 0, col: 0 };
@@ -46,10 +46,11 @@ const OBJECT_CYCLE = [
 
 const alpha = 0.2; // inlärningshastighet
 const gamma = 0.9; // diskontering
-let epsilon = 0.3; // utforskning
-const minEpsilon = 0.05;
-const epsilonDecay = 0.995;
+let epsilon = 1.0; // utforskning
+const minEpsilon = 0.1;
+const epsilonDecay = 0.999;
 const BASE_DELAY = 250;
+const MAX_STEPS = 200;
 
 let cells = [];
 let robotPos = { ...startPos };
@@ -70,8 +71,26 @@ let scores = [];
 let averages = [];
 let currentEpisodePath = [];
 let bestPath = null;
+let stepsThisEpisode = 0;
 
 const appleCells = new Set();
+
+const appleIndex = new Map();
+let appleCount = 0;
+let appleMask = 0;
+
+function rebuildAppleIndex() {
+  appleIndex.clear();
+  appleCount = 0;
+  appleCells.forEach(key => {
+    appleIndex.set(key, appleCount);
+    appleCount += 1;
+  });
+}
+
+function resetAppleMaskForEpisode() {
+  appleMask = appleCount > 0 ? (1 << appleCount) - 1 : 0;
+}
 
 function normalizeAppleReward(value) {
   if (!Number.isFinite(value)) {
@@ -438,6 +457,8 @@ function handleCellClick(event) {
     cycleIndex === -1
       ? OBJECT_CYCLE[0]
       : OBJECT_CYCLE[(cycleIndex + 1) % OBJECT_CYCLE.length];
+  const appleChanged =
+    currentType === OBJECT_TYPES.APPLE || nextType === OBJECT_TYPES.APPLE;
 
   setCellObject(row, col, nextType);
   if (!hasAnyTerminalCell()) {
@@ -449,6 +470,10 @@ function handleCellClick(event) {
     renderBestPath();
   } else {
     clearPathOverlay();
+  }
+  if (appleChanged) {
+    rebuildAppleIndex();
+    resetTraining();
   }
 }
 
@@ -474,6 +499,7 @@ function initializeCellObjects() {
       }
     }
   }
+  rebuildAppleIndex();
 }
 
 function setCellObject(row, col, type, options = {}) {
@@ -519,6 +545,11 @@ function restoreApplesForNewEpisode() {
 }
 
 function consumeApple(row, col) {
+  const key = positionKey(row, col);
+  const idx = appleIndex.get(key);
+  if (idx !== undefined) {
+    appleMask &= ~(1 << idx);
+  }
   setCellObject(row, col, OBJECT_TYPES.EMPTY, { trackApple: false });
 }
 
@@ -569,13 +600,15 @@ function hasAnyTerminalCell() {
 }
 
 function initQTable() {
-  qTable = Array.from({ length: rows * cols }, () =>
-    ACTIONS.map(() => 0)
+  const numStates = (rows * cols) * (1 << Math.max(appleCount, 0));
+  qTable = Array.from({ length: numStates }, () =>
+    ACTIONS.map(() => 1.0)
   );
 }
 
 function stateIndex(row, col) {
-  return row * cols + col;
+  const positionIndex = row * cols + col;
+  return appleMask * (rows * cols) + positionIndex;
 }
 
 function getSpeedDelay() {
@@ -717,12 +750,12 @@ function chooseAction(stateIdx) {
   return bestActions[Math.floor(Math.random() * bestActions.length)];
 }
 
-function updateQTable(stateIdx, actionIdx, reward, nextStateIdx) {
+function updateQTable(stateIdx, actionIdx, reward, nextStateIdx, done) {
   const currentQ = qTable[stateIdx][actionIdx];
-  const maxNextQ = Math.max(...qTable[nextStateIdx]);
-  const newQ =
-    currentQ + alpha * (reward + gamma * maxNextQ - currentQ);
-  qTable[stateIdx][actionIdx] = newQ;
+  const target = done
+    ? reward
+    : reward + gamma * Math.max(...qTable[nextStateIdx]);
+  qTable[stateIdx][actionIdx] = currentQ + alpha * (target - currentQ);
 }
 
 function stepLoop() {
@@ -734,12 +767,14 @@ function stepLoop() {
   const { reward, done } = takeStep(action);
 
   const nextStateIdx = stateIndex(robotPos.row, robotPos.col);
-  updateQTable(stateIdx, actionIdx, reward, nextStateIdx);
+  stepsThisEpisode += 1;
+  const truncated = !done && stepsThisEpisode >= MAX_STEPS;
+  updateQTable(stateIdx, actionIdx, reward, nextStateIdx, done || truncated);
 
   currentScore += reward;
   currentScoreEl.textContent = currentScore.toFixed(1);
 
-  if (done) {
+  if (done || truncated) {
     episodeActive = false;
     finalizeEpisode(currentScore);
     episodeTimeout = setTimeout(() => {
@@ -759,6 +794,7 @@ function scheduleStepLoop(delay = getSpeedDelay()) {
 
 function runEpisode() {
   if (!isTraining || isPaused) return;
+  resetAppleMaskForEpisode();
   restoreApplesForNewEpisode();
   episodeActive = true;
   currentEpisode += 1;
@@ -767,6 +803,7 @@ function runEpisode() {
   currentScoreEl.textContent = currentScore.toFixed(1);
   robotPos = { ...startPos };
   currentEpisodePath = [{ ...startPos }];
+  stepsThisEpisode = 0;
   updateRobotVisual();
   scheduleStepLoop(getSpeedDelay());
 }
@@ -855,7 +892,7 @@ function resetTraining() {
   pauseBtn.textContent = "Pausa";
   clearTimeout(stepTimeout);
   clearTimeout(episodeTimeout);
-  epsilon = 0.3;
+  epsilon = 1.0;
   updateEpsilonDisplay();
   currentEpisode = 0;
   currentScore = 0;
@@ -877,8 +914,11 @@ function resetTraining() {
   currentScoreEl.textContent = "0";
   updateBestScoreDisplay();
   robotPos = { ...startPos };
+  rebuildAppleIndex();
+  resetAppleMaskForEpisode();
   initQTable();
   restoreApplesForNewEpisode();
+  stepsThisEpisode = 0;
   createGrid();
   syncChartHeight();
   clearPathOverlay();
