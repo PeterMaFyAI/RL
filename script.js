@@ -16,6 +16,7 @@ const bestScoreEl = document.getElementById("bestScore");
 const epsilonValueEl = document.getElementById("epsilonValue");
 const chartSection = document.querySelector(".chart-section");
 const chartCanvas = document.getElementById("scoreChart");
+const configurationControls = document.querySelector(".configuration-controls");
 
 let rows = 5;
 let cols = 5;
@@ -50,6 +51,16 @@ let epsilon = 0.3; // utforskning
 const minEpsilon = 0.05;
 const epsilonDecay = 0.995;
 const BASE_DELAY = 250;
+const ULTRA_DEFAULT_EPISODES = 500;
+const ULTRA_YIELD_INTERVAL = 100;
+
+let ultraEpisodesInput = null;
+let ultraModeButton = null;
+
+let renderingEnabled = true;
+let pendingChartUpdate = false;
+let isUltraRunning = false;
+let ultraAbortRequested = false;
 
 let cells = [];
 let robotPos = { ...startPos };
@@ -78,6 +89,40 @@ let appleMask = 0;
 
 function fullAppleMask() {
   return appleCount ? (1 << appleCount) - 1 : 0;
+}
+
+function stopAllTimers() {
+  clearTimeout(stepTimeout);
+  clearTimeout(episodeTimeout);
+  stepTimeout = null;
+  episodeTimeout = null;
+}
+
+function updateEpisodeCounterDisplay() {
+  if (!renderingEnabled || !episodeCounter) return;
+  episodeCounter.textContent = String(currentEpisode);
+}
+
+function updateCurrentScoreDisplay() {
+  if (!renderingEnabled || !currentScoreEl) return;
+  currentScoreEl.textContent = currentScore.toFixed(1);
+}
+
+function requestChartRender() {
+  if (renderingEnabled) {
+    chart.update();
+    pendingChartUpdate = false;
+  } else {
+    pendingChartUpdate = true;
+  }
+}
+
+function flushPendingChartRender() {
+  if (!renderingEnabled || !pendingChartUpdate) {
+    return;
+  }
+  chart.update();
+  pendingChartUpdate = false;
 }
 
 function resetAppleMask() {
@@ -125,10 +170,65 @@ function formatPoints(value) {
 }
 
 function updateAppleRewardDisplay() {
+  if (!renderingEnabled) {
+    return;
+  }
   const formatted = formatPoints(appleReward);
   if (appleLegendValue) {
     appleLegendValue.textContent = formatted;
   }
+}
+
+function createUltraControls() {
+  if (ultraModeButton || !configurationControls) {
+    return;
+  }
+
+  const container = document.createElement("div");
+  container.className = "apple-config ultra-mode-controls";
+
+  const label = document.createElement("label");
+  label.setAttribute("for", "ultraEpisodesInput");
+  label.textContent = "Ultra-episoder";
+
+  ultraEpisodesInput = document.createElement("input");
+  ultraEpisodesInput.type = "number";
+  ultraEpisodesInput.id = "ultraEpisodesInput";
+  ultraEpisodesInput.min = "1";
+  ultraEpisodesInput.step = "100";
+  ultraEpisodesInput.value = String(ULTRA_DEFAULT_EPISODES);
+
+  ultraModeButton = document.createElement("button");
+  ultraModeButton.id = "ultraModeBtn";
+  ultraModeButton.className = "secondary";
+  ultraModeButton.textContent = "Ultra-läge";
+
+  container.appendChild(label);
+  container.appendChild(ultraEpisodesInput);
+  container.appendChild(ultraModeButton);
+
+  configurationControls.appendChild(container);
+
+  ultraModeButton.addEventListener("click", async () => {
+    const episodes = parseUltraEpisodeInput();
+    await startUltraMode(episodes);
+  });
+}
+
+function parseUltraEpisodeInput() {
+  if (!ultraEpisodesInput) {
+    return ULTRA_DEFAULT_EPISODES;
+  }
+  const parsed = Number(ultraEpisodesInput.value);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    ultraEpisodesInput.value = String(ULTRA_DEFAULT_EPISODES);
+    return ULTRA_DEFAULT_EPISODES;
+  }
+  const rounded = Math.max(1, Math.floor(parsed));
+  if (rounded !== parsed) {
+    ultraEpisodesInput.value = String(rounded);
+  }
+  return rounded;
 }
 
 const DEFAULT_WALL_POSITIONS = [
@@ -430,6 +530,9 @@ function recalculateScoreExtrema() {
 }
 
 function createGrid() {
+  if (!renderingEnabled) {
+    return;
+  }
   gridElement.innerHTML = "";
   cells = [];
   gridElement.style.setProperty("--grid-cols", cols);
@@ -592,6 +695,7 @@ function getObjectIcon(type) {
 }
 
 function renderCell(row, col) {
+  if (!renderingEnabled) return;
   const cell = cells[row]?.[col];
   if (!cell) return;
   const span = cell.querySelector(".object-icon");
@@ -601,6 +705,9 @@ function renderCell(row, col) {
 }
 
 function updateAllCellVisuals() {
+  if (!renderingEnabled) {
+    return;
+  }
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       renderCell(r, c);
@@ -645,7 +752,7 @@ function updateSpeedLabel() {
 }
 
 function syncChartHeight() {
-  if (!chartSection) return;
+  if (!renderingEnabled || !chartSection) return;
   const gridHeight = gridElement.offsetHeight;
   chartSection.style.minHeight = `${gridHeight}px`;
   chartSection.style.height = `${gridHeight}px`;
@@ -655,7 +762,7 @@ function syncChartHeight() {
 }
 
 function updateOverlaySize() {
-  if (!pathOverlay || !gridElement) return;
+  if (!renderingEnabled || !pathOverlay || !gridElement) return;
   const width = gridElement.offsetWidth;
   const height = gridElement.offsetHeight;
   pathOverlay.setAttribute("viewBox", `0 0 ${width} ${height}`);
@@ -664,13 +771,13 @@ function updateOverlaySize() {
 }
 
 function clearPathOverlay() {
-  if (!pathOverlay) return;
+  if (!renderingEnabled || !pathOverlay) return;
   pathOverlay.innerHTML = "";
   pathOverlay.classList.remove("visible");
 }
 
 function renderBestPath() {
-  if (!pathOverlay || !gridWrapper) return;
+  if (!renderingEnabled || !pathOverlay || !gridWrapper) return;
   if (!bestPath || bestPath.length < 2) {
     clearPathOverlay();
     return;
@@ -700,6 +807,7 @@ function renderBestPath() {
 }
 
 function updateRobotVisual() {
+  if (!renderingEnabled) return;
   cells.flat().forEach(cell => cell.classList.remove("robot-active"));
   gridElement.querySelectorAll(".robot-icon").forEach(icon => icon.remove());
   const { row, col } = robotPos;
@@ -754,10 +862,26 @@ function takeStep(action) {
   }
 
   robotPos = { row: nextRow, col: nextCol };
-  updateRobotVisual();
+  if (renderingEnabled) {
+    updateRobotVisual();
+  }
   currentEpisodePath.push({ ...robotPos });
 
   return { reward, done };
+}
+
+function beginEpisode() {
+  restoreApplesForNewEpisode();
+  episodeActive = true;
+  currentEpisode += 1;
+  updateEpisodeCounterDisplay();
+  currentScore = 0;
+  updateCurrentScoreDisplay();
+  robotPos = { ...startPos };
+  currentEpisodePath = [{ ...startPos }];
+  if (renderingEnabled) {
+    updateRobotVisual();
+  }
 }
 
 function chooseAction(stateIdx) {
@@ -781,9 +905,7 @@ function updateQTable(stateIdx, actionIdx, reward, nextStateIdx, done) {
   qTable[stateIdx][actionIdx] = newQ;
 }
 
-function stepLoop() {
-  if (!isTraining || isPaused || !episodeActive) return;
-
+function performStep() {
   const stateIdx = stateIndex(robotPos.row, robotPos.col);
   const actionIdx = chooseAction(stateIdx);
   const action = ACTIONS[actionIdx];
@@ -793,13 +915,25 @@ function stepLoop() {
   updateQTable(stateIdx, actionIdx, reward, nextStateIdx, done);
 
   currentScore += reward;
-  currentScoreEl.textContent = currentScore.toFixed(1);
+  updateCurrentScoreDisplay();
 
   if (done) {
     episodeActive = false;
     finalizeEpisode(currentScore);
+    return true;
+  }
+
+  return false;
+}
+
+function stepLoop() {
+  if (!isTraining || isPaused || !episodeActive || isUltraRunning) return;
+
+  const done = performStep();
+
+  if (done) {
     episodeTimeout = setTimeout(() => {
-      if (!isTraining || isPaused) return;
+      if (!isTraining || isPaused || isUltraRunning) return;
       runEpisode();
     }, 400);
     return;
@@ -809,21 +943,16 @@ function stepLoop() {
 }
 
 function scheduleStepLoop(delay = getSpeedDelay()) {
+  if (isUltraRunning) {
+    return;
+  }
   clearTimeout(stepTimeout);
   stepTimeout = setTimeout(stepLoop, delay);
 }
 
 function runEpisode() {
-  if (!isTraining || isPaused) return;
-  restoreApplesForNewEpisode();
-  episodeActive = true;
-  currentEpisode += 1;
-  episodeCounter.textContent = currentEpisode;
-  currentScore = 0;
-  currentScoreEl.textContent = currentScore.toFixed(1);
-  robotPos = { ...startPos };
-  currentEpisodePath = [{ ...startPos }];
-  updateRobotVisual();
+  if (!isTraining || isPaused || isUltraRunning) return;
+  beginEpisode();
   scheduleStepLoop(getSpeedDelay());
 }
 
@@ -860,8 +989,7 @@ function finalizeEpisode(score) {
     useDynamicScale = false;
   }
   updateChartScale();
-
-  chart.update();
+  requestChartRender();
 
   if (score > bestScore) {
     bestScore = score;
@@ -875,6 +1003,9 @@ function finalizeEpisode(score) {
 }
 
 function startTraining() {
+  if (isUltraRunning) {
+    return;
+  }
   if (isTraining && isPaused) {
     isPaused = false;
     pauseBtn.textContent = "Pausa";
@@ -899,18 +1030,20 @@ function pauseTraining() {
   if (!isTraining) return;
   isPaused = true;
   pauseBtn.textContent = "Fortsätt";
-  clearTimeout(stepTimeout);
-  clearTimeout(episodeTimeout);
+  stopAllTimers();
   renderBestPath();
 }
 
 function resetTraining() {
+  if (isUltraRunning) {
+    requestUltraAbort();
+    return;
+  }
   isTraining = false;
   isPaused = false;
   episodeActive = false;
   pauseBtn.textContent = "Pausa";
-  clearTimeout(stepTimeout);
-  clearTimeout(episodeTimeout);
+  stopAllTimers();
   epsilon = 0.3;
   updateEpsilonDisplay();
   currentEpisode = 0;
@@ -928,9 +1061,9 @@ function resetTraining() {
   scoreMax = null;
   useDynamicScale = false;
   updateChartScale();
-  chart.update();
-  episodeCounter.textContent = "0";
-  currentScoreEl.textContent = "0";
+  requestChartRender();
+  updateEpisodeCounterDisplay();
+  updateCurrentScoreDisplay();
   updateBestScoreDisplay();
   robotPos = { ...startPos };
   initQTable();
@@ -940,8 +1073,127 @@ function resetTraining() {
   clearPathOverlay();
 }
 
+function toggleUltraControls(isRunning) {
+  const elements = [
+    startBtn,
+    resetBtn,
+    rowSelect,
+    colSelect,
+    appleRewardInput,
+    speedSlider,
+    ultraModeButton,
+    ultraEpisodesInput
+  ];
+
+  elements.forEach(element => {
+    if (element) {
+      element.disabled = isRunning;
+    }
+  });
+
+  if (pauseBtn) {
+    pauseBtn.disabled = false;
+  }
+}
+
+function requestUltraAbort() {
+  if (!isUltraRunning) {
+    return;
+  }
+  ultraAbortRequested = true;
+  if (pauseBtn) {
+    pauseBtn.textContent = "Avbryter…";
+  }
+}
+
+function ultraYield() {
+  return new Promise(resolve => setTimeout(resolve, 0));
+}
+
+async function startUltraMode(totalEpisodes) {
+  if (isUltraRunning) {
+    return;
+  }
+
+  const targetEpisodes = Math.max(1, totalEpisodes);
+  stopAllTimers();
+  isTraining = false;
+  isPaused = false;
+  episodeActive = false;
+  ultraAbortRequested = false;
+  isUltraRunning = true;
+  toggleUltraControls(true);
+  if (pauseBtn) {
+    pauseBtn.textContent = "Avbryt Ultra";
+  }
+
+  renderingEnabled = false;
+
+  try {
+    for (let episodeIndex = 0; episodeIndex < targetEpisodes; episodeIndex++) {
+      if (ultraAbortRequested) {
+        break;
+      }
+
+      beginEpisode();
+
+      while (!ultraAbortRequested) {
+        const done = performStep();
+        if (done) {
+          break;
+        }
+      }
+
+      if (ultraAbortRequested) {
+        break;
+      }
+
+      if ((episodeIndex + 1) % ULTRA_YIELD_INTERVAL === 0) {
+        await ultraYield();
+      }
+    }
+  } finally {
+    isUltraRunning = false;
+    renderingEnabled = true;
+    episodeActive = false;
+    currentScore = 0;
+    restoreApplesForNewEpisode();
+    robotPos = { ...startPos };
+    currentEpisodePath = [{ ...startPos }];
+    toggleUltraControls(false);
+    if (pauseBtn) {
+      pauseBtn.textContent = "Pausa";
+    }
+    ultraAbortRequested = false;
+    finalizeUltraCleanup();
+  }
+}
+
+function finalizeUltraCleanup() {
+  updateAppleRewardDisplay();
+  updateEpisodeCounterDisplay();
+  updateCurrentScoreDisplay();
+  updateBestScoreDisplay();
+  updateEpsilonDisplay();
+  updateAllCellVisuals();
+  updateRobotVisual();
+  updateOverlaySize();
+  if (bestPath && bestPath.length >= 2) {
+    renderBestPath();
+  } else {
+    clearPathOverlay();
+  }
+  updateChartScale();
+  flushPendingChartRender();
+  syncChartHeight();
+}
+
 startBtn.addEventListener("click", startTraining);
 pauseBtn.addEventListener("click", () => {
+  if (isUltraRunning) {
+    requestUltraAbort();
+    return;
+  }
   if (!isTraining) return;
   if (isPaused) {
     startTraining();
@@ -958,6 +1210,7 @@ speedSlider.addEventListener("input", () => {
   }
 });
 
+createUltraControls();
 setupAppleRewardInput();
 
 if (rowSelect) {
@@ -999,12 +1252,12 @@ window.addEventListener("resize", () => {
 });
 
 function updateEpsilonDisplay() {
-  if (!epsilonValueEl) return;
+  if (!renderingEnabled || !epsilonValueEl) return;
   epsilonValueEl.textContent = epsilon.toFixed(2);
 }
 
 function updateBestScoreDisplay() {
-  if (!bestScoreEl) return;
+  if (!renderingEnabled || !bestScoreEl) return;
   const hasBestScore = bestScore !== -Infinity;
   const scoreText = hasBestScore ? bestScore.toFixed(1) : "0";
   const episodeText = hasBestScore && bestScoreEpisode !== null ? bestScoreEpisode : "–";
