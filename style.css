@@ -63,7 +63,7 @@ header p {
   display: flex;
   gap: 0.75rem;
   flex-wrap: wrap;
-  align-items: stretch;
+  align-items: flex-start;
 }
 
 .grid-size-controls {
@@ -73,7 +73,7 @@ header p {
   box-shadow: 0 6px 16px rgba(255, 195, 113, 0.35);
   display: flex;
   gap: 1rem;
-  align-items: flex-end;
+  align-items: flex-start;
 }
 
 .grid-size-control {
@@ -166,14 +166,14 @@ button.danger {
   flex-direction: column;
   gap: 0.4rem;
   min-width: 140px;
-  align-items: center;
+  align-items: flex-start;
 }
 
 .apple-config label {
   font-size: 0.9rem;
   font-weight: 600;
   color: rgba(120, 50, 50, 0.85);
-  text-align: center;
+  text-align: left;
   width: 100%;
 }
 
@@ -204,20 +204,21 @@ button.danger {
   flex-direction: column;
   gap: 0.6rem;
   min-width: 200px;
+  align-items: flex-start;
 }
 
 .ultra-mode-controls label {
   font-size: 0.9rem;
   font-weight: 600;
   color: rgba(40, 100, 70, 0.85);
-  text-align: center;
+  text-align: left;
 }
 
 .ultra-input-row {
   display: flex;
   gap: 0.5rem;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
 }
 
 .ultra-mode-controls input {
@@ -243,6 +244,8 @@ button.danger {
   color: rgba(20, 70, 50, 0.95);
   box-shadow: 0 4px 12px rgba(120, 200, 160, 0.35);
   white-space: nowrap;
+  padding: 0.55rem 1.2rem;
+  font-size: 0.95rem;
 }
 
 .ultra-mode-button:hover {
