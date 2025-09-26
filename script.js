@@ -72,6 +72,41 @@ let currentEpisodePath = [];
 let bestPath = null;
 
 const appleCells = new Set();
+let appleIndex = new Map();
+let appleCount = 0;
+let appleMask = 0;
+
+function fullAppleMask() {
+  return appleCount ? (1 << appleCount) - 1 : 0;
+}
+
+function resetAppleMask() {
+  appleMask = fullAppleMask();
+}
+
+function rebuildAppleIndex() {
+  const keys = Array.from(appleCells).sort((a, b) => a.localeCompare(b));
+  appleIndex = new Map();
+  let mask = 0;
+
+  keys.forEach((key, index) => {
+    appleIndex.set(key, index);
+    const [rowStr, colStr] = key.split(",");
+    const row = Number(rowStr);
+    const col = Number(colStr);
+    if (getCellObject(row, col) === OBJECT_TYPES.APPLE) {
+      mask |= 1 << index;
+    }
+  });
+
+  const previousCount = appleCount;
+  appleCount = keys.length;
+  appleMask = mask;
+
+  if (previousCount !== appleCount) {
+    initQTable();
+  }
+}
 
 function normalizeAppleReward(value) {
   if (!Number.isFinite(value)) {
@@ -474,6 +509,7 @@ function initializeCellObjects() {
       }
     }
   }
+  rebuildAppleIndex();
 }
 
 function setCellObject(row, col, type, options = {}) {
@@ -481,13 +517,23 @@ function setCellObject(row, col, type, options = {}) {
     return;
   }
   const { trackApple = true } = options;
+  const previousType = cellObjects[row][col];
   cellObjects[row][col] = type;
   if (trackApple) {
     const key = positionKey(row, col);
-    if (type === OBJECT_TYPES.APPLE) {
+    const trackedAppleExists = appleCells.has(key);
+    if (type === OBJECT_TYPES.APPLE && !trackedAppleExists) {
       appleCells.add(key);
-    } else {
+      rebuildAppleIndex();
+    } else if (type !== OBJECT_TYPES.APPLE && trackedAppleExists) {
       appleCells.delete(key);
+      rebuildAppleIndex();
+    } else if (
+      type === OBJECT_TYPES.APPLE &&
+      trackedAppleExists &&
+      previousType !== OBJECT_TYPES.APPLE
+    ) {
+      rebuildAppleIndex();
     }
   }
   renderCell(row, col);
@@ -498,6 +544,7 @@ function getCellObject(row, col) {
 }
 
 function restoreApplesForNewEpisode() {
+  resetAppleMask();
   appleCells.forEach(key => {
     const [rowStr, colStr] = key.split(",");
     const row = Number(rowStr);
@@ -519,6 +566,11 @@ function restoreApplesForNewEpisode() {
 }
 
 function consumeApple(row, col) {
+  const key = positionKey(row, col);
+  const index = appleIndex.get(key);
+  if (typeof index === "number") {
+    appleMask &= ~(1 << index);
+  }
   setCellObject(row, col, OBJECT_TYPES.EMPTY, { trackApple: false });
 }
 
@@ -569,13 +621,17 @@ function hasAnyTerminalCell() {
 }
 
 function initQTable() {
-  qTable = Array.from({ length: rows * cols }, () =>
+  const stateMultiplier = 1 << appleCount;
+  const safeMultiplier = stateMultiplier > 0 ? stateMultiplier : 1;
+  const totalStates = rows * cols * safeMultiplier;
+  qTable = Array.from({ length: totalStates }, () =>
     ACTIONS.map(() => 0)
   );
 }
 
 function stateIndex(row, col) {
-  return row * cols + col;
+  const baseIndex = row * cols + col;
+  return appleMask * (rows * cols) + baseIndex;
 }
 
 function getSpeedDelay() {
@@ -717,11 +773,11 @@ function chooseAction(stateIdx) {
   return bestActions[Math.floor(Math.random() * bestActions.length)];
 }
 
-function updateQTable(stateIdx, actionIdx, reward, nextStateIdx) {
+function updateQTable(stateIdx, actionIdx, reward, nextStateIdx, done) {
   const currentQ = qTable[stateIdx][actionIdx];
-  const maxNextQ = Math.max(...qTable[nextStateIdx]);
-  const newQ =
-    currentQ + alpha * (reward + gamma * maxNextQ - currentQ);
+  const maxNextQ = done ? 0 : Math.max(...qTable[nextStateIdx]);
+  const target = done ? reward : reward + gamma * maxNextQ;
+  const newQ = currentQ + alpha * (target - currentQ);
   qTable[stateIdx][actionIdx] = newQ;
 }
 
@@ -734,7 +790,7 @@ function stepLoop() {
   const { reward, done } = takeStep(action);
 
   const nextStateIdx = stateIndex(robotPos.row, robotPos.col);
-  updateQTable(stateIdx, actionIdx, reward, nextStateIdx);
+  updateQTable(stateIdx, actionIdx, reward, nextStateIdx, done);
 
   currentScore += reward;
   currentScoreEl.textContent = currentScore.toFixed(1);
