@@ -185,7 +185,7 @@ function createUltraControls() {
   }
 
   const container = document.createElement("div");
-  container.className = "apple-config ultra-mode-controls";
+  container.className = "ultra-mode-controls";
 
   const label = document.createElement("label");
   label.setAttribute("for", "ultraEpisodesInput");
@@ -200,12 +200,16 @@ function createUltraControls() {
 
   ultraModeButton = document.createElement("button");
   ultraModeButton.id = "ultraModeBtn";
-  ultraModeButton.className = "secondary";
+  ultraModeButton.className = "ultra-mode-button";
   ultraModeButton.textContent = "Ultra-läge";
 
+  const inputRow = document.createElement("div");
+  inputRow.className = "ultra-input-row";
+  inputRow.appendChild(ultraEpisodesInput);
+  inputRow.appendChild(ultraModeButton);
+
   container.appendChild(label);
-  container.appendChild(ultraEpisodesInput);
-  container.appendChild(ultraModeButton);
+  container.appendChild(inputRow);
 
   configurationControls.appendChild(container);
 
