@@ -355,6 +355,36 @@ button.danger {
   pointer-events: none;
 }
 
+.step-reward {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% - 6px);
+  transform: translate(-50%, 8px);
+  opacity: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  pointer-events: none;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  transition: opacity 0.25s ease-out, transform 0.25s ease-out;
+}
+
+.step-reward-visible {
+  opacity: 1;
+  transform: translate(-50%, -10px);
+}
+
+.step-reward-positive {
+  color: #2b9348;
+}
+
+.step-reward-negative {
+  color: #d62828;
+}
+
+.step-reward.step-reward-apple {
+  color: #2d6a4f;
+}
+
 .path-overlay {
   position: absolute;
   inset: 0;
