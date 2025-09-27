@@ -217,7 +217,7 @@ button.danger {
 .ultra-input-row {
   display: flex;
   gap: 0.5rem;
-  align-items: center;
+  align-items: stretch;
   justify-content: flex-start;
 }
 
@@ -244,13 +244,16 @@ button.danger {
   color: rgba(20, 70, 50, 0.95);
   box-shadow: 0 4px 12px rgba(120, 200, 160, 0.35);
   white-space: nowrap;
-  padding: 0.55rem 1.2rem;
-  font-size: 0.95rem;
+  padding: 0 0.85rem;
+  height: calc(0.95rem + 1rem);
+  font-size: 1.05rem;
   display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
+  justify-content: center;
+  gap: 0;
   font-weight: 700;
   letter-spacing: 0.01em;
+  box-sizing: border-box;
 }
 
 .ultra-mode-button:hover {
@@ -261,19 +264,14 @@ button.danger {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.05rem;
+  font-size: 1.1rem;
   font-weight: 700;
   background: rgba(255, 255, 255, 0.35);
   color: rgba(20, 70, 50, 0.9);
-  padding: 0.15rem 0.55rem;
+  padding: 0.1rem 0.55rem;
   border-radius: 999px;
   box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.35);
   letter-spacing: -0.05em;
-}
-
-.ultra-mode-button .skip-text {
-  display: inline-flex;
-  align-items: center;
 }
 
 .ultra-mode-button:disabled .skip-icon {
