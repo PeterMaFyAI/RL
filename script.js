@@ -57,6 +57,14 @@ const ULTRA_YIELD_INTERVAL = 100;
 let ultraEpisodesInput = null;
 let ultraModeButton = null;
 
+function setSnabbspolaButtonIdleLabel() {
+  if (!ultraModeButton) {
+    return;
+  }
+  ultraModeButton.innerHTML =
+    '<span class="skip-icon" aria-hidden="true">▶│</span><span class="skip-text">Snabbspola</span>';
+}
+
 let renderingEnabled = true;
 let pendingChartUpdate = false;
 let isUltraRunning = false;
@@ -189,7 +197,7 @@ function createUltraControls() {
 
   const label = document.createElement("label");
   label.setAttribute("for", "ultraEpisodesInput");
-  label.textContent = "Ultra-episoder";
+  label.textContent = "Snabbspola";
 
   ultraEpisodesInput = document.createElement("input");
   ultraEpisodesInput.type = "number";
@@ -201,7 +209,7 @@ function createUltraControls() {
   ultraModeButton = document.createElement("button");
   ultraModeButton.id = "ultraModeBtn";
   ultraModeButton.className = "ultra-mode-button";
-  ultraModeButton.textContent = "Ultra-läge";
+  setSnabbspolaButtonIdleLabel();
 
   const inputRow = document.createElement("div");
   inputRow.className = "ultra-input-row";
@@ -1098,6 +1106,10 @@ function toggleUltraControls(isRunning) {
   if (pauseBtn) {
     pauseBtn.disabled = false;
   }
+
+  if (!isRunning) {
+    setSnabbspolaButtonIdleLabel();
+  }
 }
 
 function requestUltraAbort() {
@@ -1128,7 +1140,7 @@ async function startUltraMode(totalEpisodes) {
   isUltraRunning = true;
   toggleUltraControls(true);
   if (pauseBtn) {
-    pauseBtn.textContent = "Avbryt Ultra";
+    pauseBtn.textContent = "Avbryt Snabbspola";
   }
 
   renderingEnabled = false;
@@ -1164,9 +1176,12 @@ async function startUltraMode(totalEpisodes) {
     restoreApplesForNewEpisode();
     robotPos = { ...startPos };
     currentEpisodePath = [{ ...startPos }];
+    stopAllTimers();
+    isTraining = true;
+    isPaused = true;
     toggleUltraControls(false);
     if (pauseBtn) {
-      pauseBtn.textContent = "Pausa";
+      pauseBtn.textContent = "Fortsätt";
     }
     ultraAbortRequested = false;
     finalizeUltraCleanup();
