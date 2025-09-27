@@ -62,7 +62,12 @@ function setSnabbspolaButtonIdleLabel() {
     return;
   }
   ultraModeButton.innerHTML =
-    '<span class="skip-icon" aria-hidden="true">▶│</span><span class="skip-text">Snabbspola</span>';
+    '<span class="skip-icon" aria-hidden="true">▶│</span>';
+  ultraModeButton.setAttribute(
+    "aria-label",
+    "Snabbspola valda episoder"
+  );
+  ultraModeButton.setAttribute("title", "Snabbspola valda episoder");
 }
 
 let renderingEnabled = true;
