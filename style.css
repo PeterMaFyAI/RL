@@ -463,6 +463,79 @@ button.danger {
   color: var(--text);
 }
 
+.hyperparameter-panel {
+  flex: 1 1 100%;
+  background: linear-gradient(135deg, #ffe9d6 0%, #ffd4b8 100%);
+  border-radius: 18px;
+  border: 1px solid rgba(255, 170, 120, 0.38);
+  box-shadow: 0 8px 20px rgba(255, 170, 120, 0.25);
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  color: rgba(110, 70, 30, 0.95);
+}
+
+.hyperparameter-panel h3 {
+  margin: 0;
+  font-size: 1.15rem;
+  color: rgba(110, 70, 30, 0.95);
+}
+
+.hyperparameter-panel h4 {
+  margin: 0;
+  font-size: 1rem;
+  color: rgba(110, 70, 30, 0.9);
+}
+
+.hyperparameter-note {
+  margin: 0;
+  font-size: 0.85rem;
+  color: rgba(110, 70, 30, 0.8);
+}
+
+.hyperparameter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.hyperparameter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 0.75rem;
+}
+
+.hyperparameter-control {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.hyperparameter-control label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: rgba(110, 70, 30, 0.9);
+}
+
+.hyperparameter-control input {
+  border: none;
+  border-radius: 12px;
+  padding: 0.45rem 0.65rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.92);
+  color: rgba(110, 70, 30, 0.95);
+  box-shadow: inset 0 2px 4px rgba(255, 170, 120, 0.25);
+  width: 100%;
+  text-align: center;
+}
+
+.hyperparameter-control input:focus {
+  outline: 2px solid rgba(255, 150, 90, 0.65);
+  outline-offset: 2px;
+}
+
 #bestScore {
   display: flex;
   flex-direction: column;
