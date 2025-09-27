@@ -118,6 +118,9 @@ function fullAppleMask() {
   return appleCount ? (1 << appleCount) - 1 : 0;
 }
 
+const STEP_REWARD_DISPLAY_DURATION = 900;
+const STEP_REWARD_FADE_DELAY = 650;
+
 function stopAllTimers() {
   clearTimeout(stepTimeout);
   clearTimeout(episodeTimeout);
@@ -1030,6 +1033,54 @@ function updateRobotVisual() {
   cell.appendChild(robotSpan);
 }
 
+function formatRewardText(reward) {
+  const rounded = Number(reward.toFixed(1));
+  const stringValue = Math.abs(rounded) === 0 ? "0,0" : rounded.toFixed(1).replace(".", ",");
+  if (rounded > 0) {
+    return `+${stringValue}`;
+  }
+  return stringValue;
+}
+
+function showStepReward(reward, targetObject) {
+  if (!renderingEnabled) {
+    return;
+  }
+  const { row, col } = robotPos;
+  const cell = cells[row]?.[col];
+  if (!cell) {
+    return;
+  }
+
+  const rewardEl = document.createElement("span");
+  rewardEl.className = "step-reward";
+
+  const displayText = formatRewardText(reward);
+  rewardEl.textContent = displayText;
+
+  const isPositive = reward > 0;
+  if (isPositive) {
+    rewardEl.classList.add("step-reward-positive");
+  } else {
+    rewardEl.classList.add("step-reward-negative");
+  }
+
+  if (targetObject === OBJECT_TYPES.APPLE) {
+    rewardEl.classList.add("step-reward-apple");
+  }
+
+  cell.appendChild(rewardEl);
+  requestAnimationFrame(() => {
+    rewardEl.classList.add("step-reward-visible");
+  });
+  setTimeout(() => {
+    rewardEl.classList.remove("step-reward-visible");
+  }, STEP_REWARD_FADE_DELAY);
+  setTimeout(() => {
+    rewardEl.remove();
+  }, STEP_REWARD_DISPLAY_DURATION);
+}
+
 function isWall(row, col) {
   return getCellObject(row, col) === OBJECT_TYPES.WALL;
 }
@@ -1074,6 +1125,7 @@ function takeStep(action) {
   robotPos = { row: nextRow, col: nextCol };
   if (renderingEnabled) {
     updateRobotVisual();
+    showStepReward(reward, targetObject);
   }
   currentEpisodePath.push({ ...robotPos });
 
