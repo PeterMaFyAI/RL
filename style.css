@@ -510,6 +510,7 @@ button.danger {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
+  align-items: flex-start;
 }
 
 .hyperparameter-control label {
@@ -527,8 +528,9 @@ button.danger {
   background: rgba(255, 255, 255, 0.92);
   color: rgba(110, 70, 30, 0.95);
   box-shadow: inset 0 2px 4px rgba(255, 170, 120, 0.25);
-  width: 100%;
-  text-align: center;
+  width: 13ch;
+  max-width: 100%;
+  text-align: left;
 }
 
 .hyperparameter-control input:focus {
