@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Förstärkningsinlärning – Gridvärld v 2.4</title>
+  <title>Förstärkningsinlärning – Gridvärld v 3.1</title>
   <link rel="stylesheet" href="style.css" />
   <link
     rel="icon"
@@ -15,7 +15,7 @@
 <body>
   <main class="app-container">
     <header>
-      <h1>Robotens förstärkningsinlärning v 2.4</h1>
+      <h1>Robotens förstärkningsinlärning v 3.1</h1>
       <p>Utforska hur en enkel Q-learning agent hittar den optimala vägen genom rutnätet.</p>
     </header>
 
@@ -110,6 +110,63 @@
           <div class="stat-card">
             <span class="label">Utforskning ε</span>
             <span class="value" id="epsilonValue">0.30</span>
+          </div>
+          <div class="hyperparameter-panel">
+            <h3>Justera hyperparametrar</h3>
+            <p class="hyperparameter-note">Starta om för att ge effekt.</p>
+            <div class="hyperparameter-control">
+              <label for="gammaInput">Framtidsvikt: γ</label>
+              <input
+                type="number"
+                id="gammaInput"
+                name="gammaInput"
+                min="0"
+                max="1"
+                step="0.01"
+                value="0.9"
+              />
+            </div>
+            <div class="hyperparameter-group">
+              <h4>Utforskning ε</h4>
+              <div class="hyperparameter-grid">
+                <div class="hyperparameter-control">
+                  <label for="epsilonStartInput">Startvärde</label>
+                  <input
+                    type="number"
+                    id="epsilonStartInput"
+                    name="epsilonStartInput"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    value="0.3"
+                  />
+                </div>
+                <div class="hyperparameter-control">
+                  <label for="epsilonDecayInput">Minskningstakt</label>
+                  <input
+                    type="number"
+                    id="epsilonDecayInput"
+                    name="epsilonDecayInput"
+                    min="0"
+                    max="1"
+                    step="0.001"
+                    value="0.995"
+                  />
+                </div>
+                <div class="hyperparameter-control">
+                  <label for="epsilonMinInput">Minsta värde</label>
+                  <input
+                    type="number"
+                    id="epsilonMinInput"
+                    name="epsilonMinInput"
+                    min="0"
+                    max="1"
+                    step="0.001"
+                    value="0.05"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

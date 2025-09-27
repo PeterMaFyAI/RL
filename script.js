@@ -14,6 +14,10 @@ const episodeCounter = document.getElementById("episodeCounter");
 const currentScoreEl = document.getElementById("currentScore");
 const bestScoreEl = document.getElementById("bestScore");
 const epsilonValueEl = document.getElementById("epsilonValue");
+const gammaInput = document.getElementById("gammaInput");
+const epsilonStartInput = document.getElementById("epsilonStartInput");
+const epsilonDecayInput = document.getElementById("epsilonDecayInput");
+const epsilonMinInput = document.getElementById("epsilonMinInput");
 const chartSection = document.querySelector(".chart-section");
 const chartCanvas = document.getElementById("scoreChart");
 const configurationControls = document.querySelector(".configuration-controls");
@@ -46,10 +50,20 @@ const OBJECT_CYCLE = [
 ];
 
 const alpha = 0.2; // inlärningshastighet
-const gamma = 0.9; // diskontering
-let epsilon = 0.3; // utforskning
-const minEpsilon = 0.05;
-const epsilonDecay = 0.995;
+const DEFAULT_GAMMA = 0.9;
+const DEFAULT_EPSILON_START = 0.3;
+const DEFAULT_EPSILON_DECAY = 0.995;
+const DEFAULT_MIN_EPSILON = 0.05;
+
+let gammaSetting = DEFAULT_GAMMA;
+let epsilonStartSetting = DEFAULT_EPSILON_START;
+let epsilonDecaySetting = DEFAULT_EPSILON_DECAY;
+let minEpsilonSetting = DEFAULT_MIN_EPSILON;
+
+let gamma = gammaSetting;
+let epsilon = epsilonStartSetting;
+let epsilonDecay = epsilonDecaySetting;
+let minEpsilon = minEpsilonSetting;
 const BASE_DELAY = 250;
 const ULTRA_DEFAULT_EPISODES = 500;
 const ULTRA_YIELD_INTERVAL = 100;
@@ -180,6 +194,185 @@ function formatPoints(value) {
     : Number(value.toFixed(1));
   const sign = normalized >= 0 ? "+" : "";
   return `${sign}${normalized}p`;
+}
+
+function formatNumber(value, decimals = 3) {
+  if (!Number.isFinite(value)) {
+    return "";
+  }
+  const rounded = Number(value.toFixed(decimals));
+  return String(rounded);
+}
+
+function clampValue(value, min, max) {
+  return Math.min(Math.max(value, min), max);
+}
+
+function parseBoundedInput(input, fallback, min, max, decimals = 3) {
+  if (!input) {
+    return fallback;
+  }
+  const rawString = input.value.trim();
+  const raw = rawString === "" ? NaN : Number(rawString);
+  const source = Number.isFinite(raw) ? raw : fallback;
+  const clamped = clampValue(source, min, max);
+  const normalized = Number(clamped.toFixed(decimals));
+  input.value = formatNumber(normalized, decimals);
+  return normalized;
+}
+
+function initializeHyperparameterControls() {
+  if (gammaInput) {
+    gammaSetting = parseBoundedInput(gammaInput, DEFAULT_GAMMA, 0, 1, 3);
+    gammaInput.addEventListener("change", () => {
+      gammaSetting = parseBoundedInput(gammaInput, gammaSetting, 0, 1, 3);
+    });
+  } else {
+    gammaSetting = DEFAULT_GAMMA;
+  }
+
+  if (epsilonStartInput) {
+    epsilonStartSetting = parseBoundedInput(
+      epsilonStartInput,
+      DEFAULT_EPSILON_START,
+      0,
+      1,
+      3
+    );
+    epsilonStartInput.addEventListener("change", () => {
+      epsilonStartSetting = parseBoundedInput(
+        epsilonStartInput,
+        epsilonStartSetting,
+        0,
+        1,
+        3
+      );
+      if (epsilonMinInput) {
+        minEpsilonSetting = Math.min(minEpsilonSetting, epsilonStartSetting);
+        epsilonMinInput.value = formatNumber(minEpsilonSetting, 3);
+      }
+    });
+  } else {
+    epsilonStartSetting = DEFAULT_EPSILON_START;
+  }
+
+  if (epsilonDecayInput) {
+    epsilonDecaySetting = parseBoundedInput(
+      epsilonDecayInput,
+      DEFAULT_EPSILON_DECAY,
+      0,
+      1,
+      3
+    );
+    epsilonDecayInput.addEventListener("change", () => {
+      epsilonDecaySetting = parseBoundedInput(
+        epsilonDecayInput,
+        epsilonDecaySetting,
+        0,
+        1,
+        3
+      );
+    });
+  } else {
+    epsilonDecaySetting = DEFAULT_EPSILON_DECAY;
+  }
+
+  if (epsilonMinInput) {
+    minEpsilonSetting = parseBoundedInput(
+      epsilonMinInput,
+      DEFAULT_MIN_EPSILON,
+      0,
+      1,
+      3
+    );
+    minEpsilonSetting = Math.min(minEpsilonSetting, epsilonStartSetting);
+    epsilonMinInput.value = formatNumber(minEpsilonSetting, 3);
+    epsilonMinInput.addEventListener("change", () => {
+      minEpsilonSetting = parseBoundedInput(
+        epsilonMinInput,
+        minEpsilonSetting,
+        0,
+        1,
+        3
+      );
+      if (epsilonStartInput) {
+        const startValue = parseBoundedInput(
+          epsilonStartInput,
+          epsilonStartSetting,
+          0,
+          1,
+          3
+        );
+        epsilonStartSetting = startValue;
+        if (minEpsilonSetting > startValue) {
+          minEpsilonSetting = startValue;
+          epsilonMinInput.value = formatNumber(minEpsilonSetting, 3);
+        }
+      }
+    });
+  } else {
+    minEpsilonSetting = Math.min(DEFAULT_MIN_EPSILON, epsilonStartSetting);
+  }
+
+  gamma = gammaSetting;
+  epsilonDecay = epsilonDecaySetting;
+  minEpsilon = Math.min(minEpsilonSetting, epsilonStartSetting);
+  minEpsilonSetting = minEpsilon;
+  epsilon = epsilonStartSetting;
+}
+
+function applyHyperparameterSettings() {
+  if (gammaInput) {
+    gammaSetting = parseBoundedInput(gammaInput, gammaSetting, 0, 1, 3);
+  } else {
+    gammaSetting = DEFAULT_GAMMA;
+  }
+
+  if (epsilonStartInput) {
+    epsilonStartSetting = parseBoundedInput(
+      epsilonStartInput,
+      epsilonStartSetting,
+      0,
+      1,
+      3
+    );
+  } else {
+    epsilonStartSetting = DEFAULT_EPSILON_START;
+  }
+
+  if (epsilonDecayInput) {
+    epsilonDecaySetting = parseBoundedInput(
+      epsilonDecayInput,
+      epsilonDecaySetting,
+      0,
+      1,
+      3
+    );
+  } else {
+    epsilonDecaySetting = DEFAULT_EPSILON_DECAY;
+  }
+
+  if (epsilonMinInput) {
+    minEpsilonSetting = parseBoundedInput(
+      epsilonMinInput,
+      minEpsilonSetting,
+      0,
+      1,
+      3
+    );
+  } else {
+    minEpsilonSetting = Math.min(DEFAULT_MIN_EPSILON, epsilonStartSetting);
+  }
+
+  minEpsilonSetting = Math.min(minEpsilonSetting, epsilonStartSetting);
+  if (epsilonMinInput) {
+    epsilonMinInput.value = formatNumber(minEpsilonSetting, 3);
+  }
+
+  gamma = gammaSetting;
+  epsilonDecay = epsilonDecaySetting;
+  minEpsilon = minEpsilonSetting;
+  epsilon = epsilonStartSetting;
 }
 
 function updateAppleRewardDisplay() {
@@ -1061,7 +1254,7 @@ function resetTraining() {
   episodeActive = false;
   pauseBtn.textContent = "Pausa";
   stopAllTimers();
-  epsilon = 0.3;
+  applyHyperparameterSettings();
   updateEpsilonDisplay();
   currentEpisode = 0;
   currentScore = 0;
@@ -1236,6 +1429,7 @@ speedSlider.addEventListener("input", () => {
 
 createUltraControls();
 setupAppleRewardInput();
+initializeHyperparameterControls();
 
 if (rowSelect) {
   rowSelect.addEventListener("change", () => {
@@ -1277,7 +1471,7 @@ window.addEventListener("resize", () => {
 
 function updateEpsilonDisplay() {
   if (!renderingEnabled || !epsilonValueEl) return;
-  epsilonValueEl.textContent = epsilon.toFixed(2);
+  epsilonValueEl.textContent = formatNumber(epsilon, 3);
 }
 
 function updateBestScoreDisplay() {
